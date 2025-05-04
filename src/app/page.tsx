@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gem, BookOpen, Smartphone } from 'lucide-react';
 import Image from 'next/image';
+import SearchBar from '@/components/search-bar'; // Import the SearchBar
 
 export default function Home() {
   const categories = [
@@ -12,9 +13,13 @@ export default function Home() {
 
   return (
     <div className="space-y-12">
-      <section className="text-center">
+      <section className="text-center space-y-6">
         <h1 className="text-4xl font-bold tracking-tight mb-4">Welcome to Velvet Mart</h1>
-        <p className="text-lg text-muted-foreground">Discover our curated collection of fine jewelry, captivating books, and cutting-edge gadgets.</p>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Discover our curated collection of fine jewelry, captivating books, and cutting-edge gadgets.</p>
+        {/* Add SearchBar below the welcome text */}
+        <div className="flex justify-center">
+           <SearchBar />
+        </div>
       </section>
 
       <section>

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
+import SearchBar from '@/components/search-bar'; // Import the SearchBar
 
 
 type CategoryPageProps = {
@@ -66,7 +67,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <h1 className="text-3xl font-bold tracking-tight">{categoryName}</h1>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">{categoryName}</h1>
+        {/* Add SearchBar */}
+        <SearchBar />
+      </div>
+
 
       {products.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
