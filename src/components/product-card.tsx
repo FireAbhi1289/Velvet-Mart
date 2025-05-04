@@ -2,8 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/data';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import AddToCartButton from './add-to-cart-button'; // Import the client component
+import BuyButton from './buy-button'; // Import the new BuyButton component
 
 interface ProductCardProps {
   product: Product;
@@ -33,7 +32,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0">
          {/* Use the client component for the button */}
-        <AddToCartButton product={product} />
+        <BuyButton product={product} />
       </CardFooter>
     </Card>
   );

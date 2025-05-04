@@ -1,10 +1,10 @@
 import { getProductById, products as allProducts } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card'; // Removed unused Card components
 import { Button } from '@/components/ui/button';
 import { Metadata } from 'next';
-import AddToCartButton from '@/components/add-to-cart-button';
+import BuyButton from '@/components/buy-button'; // Import the new BuyButton component
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
 
@@ -89,8 +89,8 @@ export default function ProductPage({ params }: ProductPageProps) {
           <p className="text-muted-foreground text-lg">{product.description}</p>
 
           <div className="flex items-center gap-4">
-            {/* AddToCartButton is a client component */}
-             <AddToCartButton product={product} size="lg" className="w-full md:w-auto" />
+            {/* BuyButton is a client component */}
+             <BuyButton product={product} size="lg" className="w-full md:w-auto" />
              {/* Optional: Add quantity selector here */}
           </div>
              <p className="text-sm text-muted-foreground">Category: <Link href={`/${product.category}`} className="hover:underline">{categoryName}</Link></p>

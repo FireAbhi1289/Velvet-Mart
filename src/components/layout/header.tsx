@@ -1,20 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Gem, BookOpen, Smartphone, Menu, X } from 'lucide-react';
+import { Gem, BookOpen, Smartphone, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/context/cart-context';
-import { Badge } from '@/components/ui/badge';
+// import { useCart } from '@/context/cart-context'; // Cart context no longer needed here
+// import { Badge } from '@/components/ui/badge'; // Badge no longer needed here
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function Header() {
-  const { cart } = useCart();
+  // const { cart } = useCart(); // Cart context no longer needed here
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0); // Cart count no longer needed
 
   const navLinks = [
     { href: '/jewelry', label: 'Jewelry', icon: Gem },
@@ -49,7 +49,8 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <Link href="/cart" passHref legacyBehavior>
+          {/* Removed Cart Link and Icon */}
+          {/* <Link href="/cart" passHref legacyBehavior>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
@@ -59,7 +60,7 @@ export default function Header() {
               )}
               <span className="sr-only">Shopping Cart</span>
             </Button>
-          </Link>
+          </Link> */}
 
           {/* Mobile Navigation Trigger */}
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

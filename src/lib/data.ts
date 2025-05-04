@@ -6,6 +6,7 @@ export type Product = {
   description: string;
   imageUrl: string;
   aiHint: string; // For image generation hint
+  buyUrl: string; // Add buyUrl field for redirection
 };
 
 export const products: Product[] = [
@@ -18,6 +19,7 @@ export const products: Product[] = [
     description: 'Elegant silver necklace with a delicate pendant. Perfect for everyday wear or special occasions.',
     imageUrl: 'https://picsum.photos/seed/jwl1/600/600',
     aiHint: 'silver necklace elegant pendant',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'jwl2',
@@ -27,6 +29,7 @@ export const products: Product[] = [
     description: 'Classic gold hoop earrings that add a touch of sophistication to any outfit.',
     imageUrl: 'https://picsum.photos/seed/jwl2/600/600',
     aiHint: 'gold hoop earrings classic',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'jwl3',
@@ -36,6 +39,7 @@ export const products: Product[] = [
     description: 'A stunning ring featuring a vibrant gemstone set in a platinum band.',
     imageUrl: 'https://picsum.photos/seed/jwl3/600/600',
     aiHint: 'gemstone ring platinum band',
+    buyUrl: '#', // Example placeholder URL
   },
    {
     id: 'jwl4',
@@ -45,6 +49,7 @@ export const products: Product[] = [
     description: 'Timeless pearl bracelet with a secure clasp. Adds elegance to any look.',
     imageUrl: 'https://picsum.photos/seed/jwl4/600/600',
     aiHint: 'pearl bracelet elegant timeless',
+    buyUrl: '#', // Example placeholder URL
   },
 
   // Books
@@ -56,6 +61,7 @@ export const products: Product[] = [
     description: 'A novel about regrets, hope, and the choices we make, exploring infinite possibilities.',
     imageUrl: 'https://picsum.photos/seed/bk1/600/600',
     aiHint: 'book cover fantasy novel',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'bk2',
@@ -65,6 +71,7 @@ export const products: Product[] = [
     description: 'A captivating exploration of human history, from the Stone Age to the present day.',
     imageUrl: 'https://picsum.photos/seed/bk2/600/600',
     aiHint: 'book cover non-fiction history',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'bk3',
@@ -74,6 +81,7 @@ export const products: Product[] = [
     description: 'An easy and proven way to build good habits and break bad ones.',
     imageUrl: 'https://picsum.photos/seed/bk3/600/600',
     aiHint: 'book cover self-help habits',
+    buyUrl: '#', // Example placeholder URL
   },
    {
     id: 'bk4',
@@ -83,6 +91,7 @@ export const products: Product[] = [
     description: 'Epic science fiction novel set in the distant future amidst a feudal interstellar society.',
     imageUrl: 'https://picsum.photos/seed/bk4/600/600',
     aiHint: 'book cover science fiction epic',
+    buyUrl: '#', // Example placeholder URL
   },
 
   // Gadgets
@@ -94,6 +103,7 @@ export const products: Product[] = [
     description: 'High-quality wireless earbuds with noise cancellation and long battery life.',
     imageUrl: 'https://picsum.photos/seed/gdg1/600/600',
     aiHint: 'wireless earbuds modern sleek',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'gdg2',
@@ -103,6 +113,7 @@ export const products: Product[] = [
     description: 'Feature-packed smartwatch with fitness tracking, notifications, and customizable faces.',
     imageUrl: 'https://picsum.photos/seed/gdg2/600/600',
     aiHint: 'smartwatch fitness tracker technology',
+    buyUrl: '#', // Example placeholder URL
   },
   {
     id: 'gdg3',
@@ -112,6 +123,7 @@ export const products: Product[] = [
     description: 'Compact and powerful Bluetooth speaker with excellent sound quality and water resistance.',
     imageUrl: 'https://picsum.photos/seed/gdg3/600/600',
     aiHint: 'bluetooth speaker portable music',
+    buyUrl: '#', // Example placeholder URL
   },
    {
     id: 'gdg4',
@@ -121,6 +133,7 @@ export const products: Product[] = [
     description: 'Lightweight e-reader with a glare-free display, perfect for reading anywhere.',
     imageUrl: 'https://picsum.photos/seed/gdg4/600/600',
     aiHint: 'e-reader digital reading technology',
+    buyUrl: '#', // Example placeholder URL
   },
 ];
 

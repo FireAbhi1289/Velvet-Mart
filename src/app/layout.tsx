@@ -4,7 +4,7 @@ import './globals.css';
 import {cn} from '@/lib/utils';
 import Header from '@/components/layout/header';
 import {Toaster} from '@/components/ui/toaster';
-import { CartProvider } from '@/context/cart-context';
+// import { CartProvider } from '@/context/cart-context'; // CartProvider removed
 
 // Using Inter as the main sans-serif font
 const fontSans = FontSans({
@@ -39,14 +39,14 @@ export default function RootLayout({
           fontSerif.variable // Make serif available if needed via 'font-serif' class
         )}
       >
-        <CartProvider>
+        {/* <CartProvider> */} {/* CartProvider removed */}
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
             {/* Optional Footer can be added here */}
           </div>
           <Toaster />
-        </CartProvider>
+        {/* </CartProvider> */} {/* CartProvider removed */}
       </body>
     </html>
   );
