@@ -1,8 +1,11 @@
+
 'use client';
 
 import type { Product } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag } from 'lucide-react'; // Changed icon
+import { ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
+import PurchaseForm from '@/components/purchase-form'; // Import the new PurchaseForm
 
 interface BuyButtonProps {
   product: Product;
@@ -14,32 +17,35 @@ interface BuyButtonProps {
 
 export default function BuyButton({
   product,
-  showIcon = true, // Keep icon by default for now
+  showIcon = true,
   variant = "default",
   size = "default",
   className
 }: BuyButtonProps) {
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handleBuyClick = () => {
-    // Redirect to the product's buy URL
-    if (product.buyUrl) {
-      window.location.href = product.buyUrl;
-    } else {
-      // Handle case where buyUrl is not defined (optional)
-      console.warn(`Buy URL not defined for product: ${product.name}`);
-      alert("Purchase link is not available for this product yet.");
-    }
+    setIsFormOpen(true);
   };
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      className={className}
-      onClick={handleBuyClick}
-    >
-      {showIcon && <ShoppingBag className="mr-2 h-4 w-4" />}
-      Buy
-    </Button>
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        className={className}
+        onClick={handleBuyClick}
+      >
+        {showIcon && <ShoppingBag className="mr-2 h-4 w-4" />}
+        Buy
+      </Button>
+      {isFormOpen && (
+        <PurchaseForm
+          product={product}
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+        />
+      )}
+    </>
   );
 }
