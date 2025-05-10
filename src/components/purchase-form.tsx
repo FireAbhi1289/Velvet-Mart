@@ -72,7 +72,7 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
     });
     toast({
       title: "Order Submitted!",
-      description: `Thank you for your interest in ${product.name}. We will contact you shortly.`,
+      description: "Your order request is submitted. We will contact you within 4 hours for confirming order.",
     });
     form.reset();
     onOpenChange(false);
@@ -213,3 +213,4 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
     </Dialog>
   );
 }
+
