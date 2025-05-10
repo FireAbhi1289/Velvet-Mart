@@ -26,7 +26,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Link wrapped around title and details for better click target */}
           <CardTitle className="text-lg font-medium mb-1 line-clamp-2 hover:text-primary transition-colors">{product.name}</CardTitle>
           <p className="text-sm text-muted-foreground mb-2 capitalize">{product.category}</p>
-          <p className="text-base font-semibold text-primary">${product.price.toFixed(2)}</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-base font-semibold text-primary">${product.price.toFixed(2)}</p>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <p className="text-sm text-muted-foreground line-through">
+                ${product.originalPrice.toFixed(2)}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Link>
       {/* CardFooter containing the BuyButton is removed */}

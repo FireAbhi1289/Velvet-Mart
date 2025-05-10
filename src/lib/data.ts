@@ -3,6 +3,7 @@ export type Product = {
   name: string;
   category: 'jewelry' | 'books' | 'gadgets';
   price: number;
+  originalPrice?: number; // Added originalPrice field
   description: string;
   imageUrl: string;
   aiHint: string; // For image generation hint
@@ -16,6 +17,7 @@ export const products: Product[] = [
     name: 'Silver Necklace',
     category: 'jewelry',
     price: 120.00,
+    originalPrice: 150.00, // Added original price
     description: 'Elegant silver necklace with a delicate pendant. Perfect for everyday wear or special occasions.',
     imageUrl: 'https://picsum.photos/seed/jwl1/600/600',
     aiHint: 'silver necklace elegant pendant',
@@ -36,6 +38,7 @@ export const products: Product[] = [
     name: 'Gemstone Ring',
     category: 'jewelry',
     price: 350.00,
+    originalPrice: 400.00, // Added original price
     description: 'A stunning ring featuring a vibrant gemstone set in a platinum band.',
     imageUrl: 'https://picsum.photos/seed/jwl3/600/600',
     aiHint: 'gemstone ring platinum band',
@@ -58,6 +61,7 @@ export const products: Product[] = [
     name: 'The Midnight Library',
     category: 'books',
     price: 15.99,
+    originalPrice: 20.00, // Added original price
     description: 'A novel about regrets, hope, and the choices we make, exploring infinite possibilities.',
     imageUrl: 'https://picsum.photos/seed/bk1/600/600',
     aiHint: 'book cover fantasy novel',
@@ -78,6 +82,7 @@ export const products: Product[] = [
     name: 'Atomic Habits',
     category: 'books',
     price: 18.00,
+    originalPrice: 22.00, // Added original price
     description: 'An easy and proven way to build good habits and break bad ones.',
     imageUrl: 'https://picsum.photos/seed/bk3/600/600',
     aiHint: 'book cover self-help habits',
@@ -100,6 +105,7 @@ export const products: Product[] = [
     name: 'Wireless Earbuds',
     category: 'gadgets',
     price: 89.99,
+    originalPrice: 110.00, // Added original price
     description: 'High-quality wireless earbuds with noise cancellation and long battery life.',
     imageUrl: 'https://picsum.photos/seed/gdg1/600/600',
     aiHint: 'wireless earbuds modern sleek',
@@ -120,6 +126,7 @@ export const products: Product[] = [
     name: 'Portable Bluetooth Speaker',
     category: 'gadgets',
     price: 59.50,
+    originalPrice: 70.00, // Added original price
     description: 'Compact and powerful Bluetooth speaker with excellent sound quality and water resistance.',
     imageUrl: 'https://picsum.photos/seed/gdg3/600/600',
     aiHint: 'bluetooth speaker portable music',

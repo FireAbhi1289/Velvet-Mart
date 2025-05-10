@@ -70,7 +70,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       </Breadcrumb>
 
       <div className="grid md:grid-cols-2 gap-8 items-start">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden rounded-lg shadow-md">
           <div className="relative aspect-square">
             <Image
               src={product.imageUrl}
@@ -79,21 +79,31 @@ export default function ProductPage({ params }: ProductPageProps) {
               objectFit="cover"
               priority // Prioritize loading the main product image
               data-ai-hint={product.aiHint}
+              className="rounded-t-lg"
             />
           </div>
         </Card>
 
         <div className="space-y-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.name}</h1>
-          <p className="text-2xl font-semibold text-primary">${product.price.toFixed(2)}</p>
-          <p className="text-muted-foreground text-lg">{product.description}</p>
+          
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-semibold text-primary">${product.price.toFixed(2)}</p>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <p className="text-xl text-muted-foreground line-through">
+                ${product.originalPrice.toFixed(2)}
+              </p>
+            )}
+          </div>
+          
+          <p className="text-muted-foreground text-lg leading-relaxed">{product.description}</p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pt-4">
             {/* BuyButton is a client component */}
-             <BuyButton product={product} size="lg" className="w-full md:w-auto" />
+             <BuyButton product={product} size="lg" className="w-full md:w-auto text-lg px-8 py-3" />
              {/* Optional: Add quantity selector here */}
           </div>
-             <p className="text-sm text-muted-foreground">Category: <Link href={`/${product.category}`} className="hover:underline">{categoryName}</Link></p>
+             <p className="text-sm text-muted-foreground pt-2">Category: <Link href={`/${product.category}`} className="hover:underline text-primary">{categoryName}</Link></p>
         </div>
       </div>
 
