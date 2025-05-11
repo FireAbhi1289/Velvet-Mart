@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,12 +13,9 @@ export default function SearchBar() {
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (searchTerm.trim()) {
-      // For now, we'll just log the search term.
-      // In a real application, you might navigate to a search results page:
-      // router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-      console.log('Searching for:', searchTerm.trim());
-      // You could also implement filtering logic directly on the client if the dataset is small
+    const trimmedSearchTerm = searchTerm.trim();
+    if (trimmedSearchTerm) {
+      router.push(`/search?q=${encodeURIComponent(trimmedSearchTerm)}`);
     }
   };
 

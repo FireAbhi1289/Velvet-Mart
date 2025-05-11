@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -195,4 +196,16 @@ export function getProductById(id: string): Product | undefined {
 
 export function getProductsByCategory(category: Product['category']): Product[] {
   return products.filter(product => product.category === category);
+}
+
+export function getProductsBySearchTerm(term: string): Product[] {
+  if (!term) {
+    return [];
+  }
+  const lowerCaseTerm = term.toLowerCase();
+  return products.filter(product => 
+    product.name.toLowerCase().includes(lowerCaseTerm) || 
+    product.description.toLowerCase().includes(lowerCaseTerm) ||
+    product.category.toLowerCase().includes(lowerCaseTerm)
+  );
 }
