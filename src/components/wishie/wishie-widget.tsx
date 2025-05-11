@@ -42,6 +42,7 @@ export default function WishieWidget() {
   useEffect(() => {
     if (isWishieOpen) {
       setIsVisible(true);
+      // Reset step and form data when Wishie opens or if the selectedCategory changes while it's open
       setCurrentStep(STEPS.GREET_ITEM_DESCRIPTION);
       setFormData({
         itemDescription: '',
@@ -54,7 +55,7 @@ export default function WishieWidget() {
       // Allows for exit animation before unmounting or hiding
       setTimeout(() => setIsVisible(false), 300); // Match animation duration
     }
-  }, [isWishieOpen]);
+  }, [isWishieOpen, selectedCategory]); // Added selectedCategory to dependencies
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -73,17 +74,39 @@ export default function WishieWidget() {
   };
 
   const nextStep = () => {
+    // Basic validation before proceeding
+    if (currentStep === STEPS.GREET_ITEM_DESCRIPTION && !formData.itemDescription.trim()) {
+        alert("Please describe the item you're looking for.");
+        return;
+    }
+    if (currentStep === STEPS.USER_DETAILS) {
+        if (!formData.fullName.trim()) {
+            alert("Please enter your full name.");
+            return;
+        }
+        if (!formData.contactNumber.trim() || !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactNumber)) {
+            alert("Please enter a valid contact number.");
+            return;
+        }
+    }
     setCurrentStep((prev) => prev + 1);
   };
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // In a real app, here you would send formData to a backend
+     if (!formData.fullName.trim()) {
+        alert("Please enter your full name.");
+        return;
+    }
+    if (!formData.contactNumber.trim() || !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactNumber)) {
+        alert("Please enter a valid contact number.");
+        return;
+    }
     console.log('Wishie Request Submitted:', { category: selectedCategory, ...formData });
     nextStep(); // Move to confirmation
   };
 
-  if (!isVisible && !isWishieOpen) { // Ensure it's fully hidden if not open and animation finished
+  if (!isVisible && !isWishieOpen) { 
     return null;
   }
 
@@ -100,7 +123,7 @@ export default function WishieWidget() {
         `fixed bottom-4 right-4 z-50 transition-all duration-300 ease-in-out transform
         ${isWishieOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`
       }
-      style={{ willChange: 'opacity, transform' }} // For smoother animation
+      style={{ willChange: 'opacity, transform' }} 
     >
       <Card className="w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] shadow-2xl rounded-lg flex flex-col bg-card">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
@@ -125,6 +148,7 @@ export default function WishieWidget() {
                   onChange={handleInputChange}
                   rows={3}
                   className="resize-none"
+                  required
                 />
               </>
             )}
@@ -173,6 +197,7 @@ export default function WishieWidget() {
                       value={formData.fullName}
                       onChange={handleInputChange}
                       className="pl-10"
+                      required
                     />
                   </div>
                   <div className="relative">
@@ -184,6 +209,7 @@ export default function WishieWidget() {
                       value={formData.contactNumber}
                       onChange={handleInputChange}
                       className="pl-10"
+                      required
                     />
                   </div>
                 </div>
@@ -207,7 +233,7 @@ export default function WishieWidget() {
             </Button>
           )}
            {currentStep === STEPS.USER_DETAILS && (
-            <Button onClick={handleSubmit} className="w-full">
+            <Button onClick={handleSubmit} className="w-full" type={currentStep === STEPS.USER_DETAILS ? "submit" : "button"}>
               Submit Wish <Send className="ml-2 h-4 w-4" />
             </Button>
           )}

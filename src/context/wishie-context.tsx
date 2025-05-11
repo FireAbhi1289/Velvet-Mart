@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -7,8 +6,9 @@ import { createContext, useContext, useState, useCallback } from 'react';
 interface WishieContextType {
   isWishieOpen: boolean;
   selectedCategory: string | null;
-  hasCategoryInteracted: boolean; // New state
-  openWishie: (categoryName?: string) => void;
+  hasCategoryInteracted: boolean;
+  updateWishieCategoryContext: (categoryName: string) => void; // New function to set context
+  openWishie: () => void; // No longer takes categoryName
   closeWishie: () => void;
 }
 
@@ -17,25 +17,27 @@ const WishieContext = createContext<WishieContextType | undefined>(undefined);
 export function WishieProvider({ children }: { children: ReactNode }) {
   const [isWishieOpen, setIsWishieOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [hasCategoryInteracted, setHasCategoryInteracted] = useState(false); // Initialize new state
+  const [hasCategoryInteracted, setHasCategoryInteracted] = useState(false);
 
-  const openWishie = useCallback((categoryName?: string) => {
-    if (categoryName !== undefined) {
-      setSelectedCategory(categoryName); // Update if a new category is explicitly given
-      setHasCategoryInteracted(true);    // Mark that a category interaction has occurred
-    }
-    // If categoryName is undefined (e.g. from generic trigger),
-    // selectedCategory remains as it was, preserving the context.
+  const updateWishieCategoryContext = useCallback((categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setHasCategoryInteracted(true);
+    // Does NOT open the widget
+  }, []);
+
+  const openWishie = useCallback(() => {
+    // This function now solely opens the widget.
+    // It relies on selectedCategory being set by updateWishieCategoryContext if needed.
+    // hasCategoryInteracted should be true if this is called via the trigger.
     setIsWishieOpen(true);
-  }, []); // Dependencies remain empty as we are setting state based on args or current state
+  }, []);
 
   const closeWishie = useCallback(() => {
     setIsWishieOpen(false);
-    // selectedCategory is not reset here, so Wishie remembers it if reopened via trigger.
   }, []);
 
   return (
-    <WishieContext.Provider value={{ isWishieOpen, selectedCategory, hasCategoryInteracted, openWishie, closeWishie }}>
+    <WishieContext.Provider value={{ isWishieOpen, selectedCategory, hasCategoryInteracted, updateWishieCategoryContext, openWishie, closeWishie }}>
       {children}
     </WishieContext.Provider>
   );
@@ -48,4 +50,3 @@ export function useWishie(): WishieContextType {
   }
   return context;
 }
-
