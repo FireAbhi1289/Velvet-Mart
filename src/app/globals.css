@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -96,4 +97,16 @@ body {
 /* Add some base styles for links */
 a {
   @apply text-primary hover:text-accent transition-colors;
+}
+
+/* Wishie specific styles (optional, can mostly use utility classes) */
+/* Example: smooth transition for chat messages appearing */
+.wishie-message-enter {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+.wishie-message-enter-active {
+  opacity: 1;
+  transform: translateY(0);
 }

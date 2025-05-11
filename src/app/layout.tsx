@@ -1,10 +1,17 @@
+
 import type {Metadata} from 'next';
 import {Inter as FontSans, Merriweather} from 'next/font/google'; // Using Inter for sans-serif, Merriweather for serif example
 import './globals.css';
 import {cn} from '@/lib/utils';
 import Header from '@/components/layout/header';
 import {Toaster} from '@/components/ui/toaster';
-// import { CartProvider } from '@/context/cart-context'; // CartProvider removed
+import { WishieProvider } from '@/context/wishie-context'; // Import WishieProvider
+import WishieWidget from '@/components/wishie/wishie-widget'; // Import WishieWidget
+import { Button } from '@/components/ui/button'; // For WishieTrigger
+import { Sparkles } from 'lucide-react'; // For WishieTrigger icon
+import { useWishie } from '@/context/wishie-context'; // To use in WishieTriggerClient
+import WishieTriggerClient from '@/components/wishie/wishie-trigger-client';
+
 
 // Using Inter as the main sans-serif font
 const fontSans = FontSans({
@@ -39,14 +46,16 @@ export default function RootLayout({
           fontSerif.variable // Make serif available if needed via 'font-serif' class
         )}
       >
-        {/* <CartProvider> */} {/* CartProvider removed */}
+        <WishieProvider> {/* Wrap with WishieProvider */}
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
             {/* Optional Footer can be added here */}
           </div>
           <Toaster />
-        {/* </CartProvider> */} {/* CartProvider removed */}
+          <WishieWidget /> {/* Render WishieWidget */}
+          <WishieTriggerClient /> {/* Render client-side trigger */}
+        </WishieProvider>
       </body>
     </html>
   );
