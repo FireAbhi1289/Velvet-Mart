@@ -4,13 +4,19 @@
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import { useWishie } from '@/context/wishie-context';
+import { usePathname } from 'next/navigation'; // Import usePathname
 
 export default function WishieTriggerClient() {
   const { openWishie, isWishieOpen, hasCategoryInteracted } = useWishie();
+  const pathname = usePathname(); // Get the current path
 
-  // Render conditions:
-  // 1. Wishie widget itself must NOT be open.
-  // 2. A category must have been interacted with at least once.
+  // Condition 1: Never show on the home page
+  if (pathname === '/') {
+    return null;
+  }
+
+  // Condition 2: Wishie widget itself must NOT be open.
+  // Condition 3: A category must have been interacted with at least once.
   if (isWishieOpen || !hasCategoryInteracted) {
     return null;
   }
