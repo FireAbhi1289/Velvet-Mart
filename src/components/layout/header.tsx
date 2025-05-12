@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gem, BookOpen, Smartphone, Menu, X, Mail as MailIcon, ShieldCheck } from 'lucide-react'; // Added MailIcon and ShieldCheck for Admin
+import { Gem, BookOpen, Smartphone, Menu, X, Mail as MailIcon } from 'lucide-react'; // Removed ShieldCheck as Admin link is removed
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
@@ -17,7 +17,7 @@ export default function Header() {
     { href: '/books', label: 'Books', icon: BookOpen },
     { href: '/gadgets', label: 'Gadgets', icon: Smartphone },
     { href: '/contact', label: 'Contact Us', icon: MailIcon },
-    { href: '/admin', label: 'Admin Panel', icon: ShieldCheck }, // Added Admin Panel link
+    // { href: '/admin', label: 'Admin Panel', icon: ShieldCheck }, // Removed Admin Panel link
   ];
 
   // Close sheet on navigation
