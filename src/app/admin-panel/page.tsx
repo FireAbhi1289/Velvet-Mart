@@ -13,7 +13,7 @@ export default async function AdminDashboardPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Product Management</h1>
         <Button asChild>
-          <Link href="/admin/add-product">
+          <Link href="/admin-panel/add-product">
             <PlusCircle className="mr-2 h-5 w-5" /> Add New Product
           </Link>
         </Button>
@@ -23,4 +23,3 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
-

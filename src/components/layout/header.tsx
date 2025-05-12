@@ -17,7 +17,7 @@ export default function Header() {
     { href: '/books', label: 'Books', icon: BookOpen },
     { href: '/gadgets', label: 'Gadgets', icon: Smartphone },
     { href: '/contact', label: 'Contact Us', icon: MailIcon },
-    // { href: '/admin', label: 'Admin Panel', icon: ShieldCheck }, // Removed Admin Panel link
+    // { href: '/admin-panel', label: 'Admin Panel', icon: ShieldCheck }, // Removed Admin Panel link
   ];
 
   // Close sheet on navigation
@@ -26,7 +26,7 @@ export default function Header() {
   }, [pathname]);
 
   // Hide header on admin layout paths
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin-panel')) {
     return null;
   }
 

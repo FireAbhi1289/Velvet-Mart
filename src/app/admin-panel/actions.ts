@@ -50,7 +50,7 @@ export async function addProductAction(data: ProductFormValues): Promise<Product
     };
 
     const newProduct = await addProduct(productDataToSave);
-    revalidatePath('/admin'); // Revalidate admin page to show new product
+    revalidatePath('/admin-panel'); // Revalidate admin page to show new product
     revalidatePath(`/${newProduct.category}`); // Revalidate category page
     revalidatePath('/'); // Revalidate home page if it lists products
     return { success: true, product: newProduct };
@@ -84,7 +84,7 @@ export async function updateProductAction(productId: string, data: ProductFormVa
     if (!updatedProduct) {
       return { success: false, error: "Product not found or failed to update." };
     }
-    revalidatePath('/admin');
+    revalidatePath('/admin-panel');
     revalidatePath(`/product/${productId}`);
     revalidatePath(`/${updatedProduct.category}`);
     revalidatePath('/');
@@ -107,7 +107,7 @@ export async function deleteProductAction(productId: string): Promise<DeleteProd
     if (!product) {
         return { success: false, error: "Product not found or failed to delete." };
     }
-    revalidatePath('/admin');
+    revalidatePath('/admin-panel');
     // Potentially revalidate category and product pages if they could still be accessed
     // For simplicity, we are just revalidating admin. Consider more specific revalidation.
     revalidatePath('/'); // Revalidate all relevant paths

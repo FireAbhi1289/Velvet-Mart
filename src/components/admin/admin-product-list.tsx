@@ -129,7 +129,7 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
               </CardContent>
               <CardFooter className="flex justify-end gap-2">
                 <Button variant="outline" size="icon" asChild title="Edit Product">
-                  <Link href={`/admin/edit-product/${product.id}`}>
+                  <Link href={`/admin-panel/edit-product/${product.id}`}>
                     <Edit className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -150,4 +150,3 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
     </div>
   );
 }
-

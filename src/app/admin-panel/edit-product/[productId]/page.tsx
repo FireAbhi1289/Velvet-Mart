@@ -47,7 +47,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
           The product you are trying to edit (ID: {productId}) does not exist.
         </p>
         <Button asChild>
-          <Link href="/admin">Go back to Product List</Link>
+          <Link href="/admin-panel">Go back to Product List</Link>
         </Button>
       </div>
     );

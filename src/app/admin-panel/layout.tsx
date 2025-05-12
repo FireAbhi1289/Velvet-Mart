@@ -9,11 +9,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-muted/40 p-4 border-r">
         <nav className="space-y-2">
           <h2 className="text-xl font-semibold mb-4">Admin Panel</h2>
-          <Link href="/admin" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent hover:text-accent-foreground">
+          <Link href="/admin-panel" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent hover:text-accent-foreground">
             <List className="h-5 w-5" />
             Product List
           </Link>
-          <Link href="/admin/add-product" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent hover:text-accent-foreground">
+          <Link href="/admin-panel/add-product" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent hover:text-accent-foreground">
             <PlusCircle className="h-5 w-5" />
             Add Product
           </Link>

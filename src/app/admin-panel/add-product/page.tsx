@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addProductAction } from '../actions'; // Server action
+import { addProductAction } from '../actions'; // Server action from parent directory
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, type ChangeEvent } from 'react';
 import Image from 'next/image';
@@ -161,7 +162,7 @@ export default function AddProductPage() {
         setAdditionalImagePreviews([]);
         additionalImagePreviews.forEach(url => URL.revokeObjectURL(url)); // Clean up
         setVideoFilePreviewName(null);
-        router.push('/admin'); 
+        router.push('/admin-panel'); 
       } else {
          const errorMessages = result.errors?.map(e => `${e.path.join('.')}: ${e.message}`).join('\n') || result.error || "An unknown error occurred.";
         toast({

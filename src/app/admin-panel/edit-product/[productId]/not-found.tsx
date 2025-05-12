@@ -12,7 +12,7 @@ export default function EditProductNotFound() {
         The product you are trying to edit could not be found. It might have been deleted or the ID is incorrect.
       </p>
       <Button asChild>
-        <Link href="/admin">Go to Product List</Link>
+        <Link href="/admin-panel">Go to Product List</Link>
       </Button>
     </div>
   );

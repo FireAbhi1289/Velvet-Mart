@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { updateProductAction, type ProductFormValues as ServerProductFormValues } from '../../actions';
+import { updateProductAction, type ProductFormValues as ServerProductFormValues } from '../../actions'; // Adjusted path
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect, type ChangeEvent } from 'react';
 import Image from 'next/image';
@@ -188,7 +188,7 @@ export default function EditProductClientForm({ product }: EditProductClientForm
           title: "Product Updated!",
           description: `${result.product.name} has been successfully updated.`,
         });
-        router.push('/admin'); 
+        router.push('/admin-panel'); 
       } else {
         const errorMessages = result.errors?.map(e => `${e.path.join('.')}: ${e.message}`).join('\n') || result.error || "An unknown error occurred.";
         toast({
@@ -469,7 +469,7 @@ export default function EditProductClientForm({ product }: EditProductClientForm
                 </>
               ) : "Update Product"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push('/admin')} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => router.push('/admin-panel')} className="flex-1">
                 Cancel
             </Button>
           </div>
@@ -478,4 +478,3 @@ export default function EditProductClientForm({ product }: EditProductClientForm
     </div>
   );
 }
-

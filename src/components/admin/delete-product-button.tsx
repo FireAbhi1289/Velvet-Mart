@@ -16,7 +16,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteProductAction } from '@/app/admin/actions';
+import { deleteProductAction } from '@/app/admin-panel/actions'; // Updated import path
 import { useRouter } from 'next/navigation';
 
 interface DeleteProductButtonProps {
