@@ -1,4 +1,3 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
@@ -14,7 +13,7 @@ export type Product = {
   additionalImageUrls?: string[];
   videoUrl?: string;
   aiHint: string;
-  buyUrl: string;
+  buyUrl?: string; // Made optional
 };
 
 // Path to the JSON file
@@ -29,6 +28,7 @@ async function readProductsFromFile(): Promise<Product[]> {
     console.error('Error reading products.json:', error);
     // If file doesn't exist or is empty, return an empty array
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      await writeProductsToFile([]); // Create an empty file if it doesn't exist
       return [];
     }
     throw error; // Rethrow other errors
@@ -79,6 +79,7 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
   const newProduct: Product = {
     ...productData,
     id: uuidv4(), // Generate a unique ID
+    buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl, // Ensure empty string becomes undefined
   };
   products.push(newProduct);
   await writeProductsToFile(products);
@@ -149,3 +150,17 @@ export const productsForStaticGeneration: Product[] = [
     "buyUrl": '#',
   },
 ];
+
+// Ensure products.json exists on startup
+(async () => {
+  try {
+    await fs.access(productsFilePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      console.log('products.json not found, creating an empty one.');
+      await writeProductsToFile([]);
+    } else {
+      console.error('Error checking products.json:', error);
+    }
+  }
+})();

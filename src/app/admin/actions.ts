@@ -5,6 +5,7 @@ import { addProduct, type Product } from '@/lib/data';
 
 // Schema for server-side validation. 
 // imageUrl, additionalImageUrls, and videoUrl now expect data URIs.
+// buyUrl is now optional.
 const productSchema = z.object({
   name: z.string().min(3),
   category: z.enum(['jewelry', 'books', 'gadgets']),
@@ -17,7 +18,7 @@ const productSchema = z.object({
   ).optional(),
   videoUrl: z.string().startsWith("data:video/", { message: "Invalid video data. Must be a data URI." }).optional().or(z.literal('')),
   aiHint: z.string().min(3),
-  buyUrl: z.string().url(),
+  buyUrl: z.string().url({ message: "Please enter a valid URL if provided." }).optional().or(z.literal('')),
 });
 
 export type AddProductFormValues = z.infer<typeof productSchema>;
@@ -49,6 +50,7 @@ export async function addProductAction(data: AddProductFormValues): Promise<AddP
       ...validationResult.data,
       videoUrl: validationResult.data.videoUrl === '' ? undefined : validationResult.data.videoUrl,
       originalPrice: validationResult.data.originalPrice === 0 ? undefined : validationResult.data.originalPrice,
+      buyUrl: validationResult.data.buyUrl === '' ? undefined : validationResult.data.buyUrl,
       // additionalImageUrls is already an array of data URIs or undefined
     };
 

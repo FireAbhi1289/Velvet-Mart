@@ -31,6 +31,7 @@ import { UploadCloud, Video, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Updated schema for file uploads
+// buyUrl is now optional
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters." }),
   category: z.enum(['jewelry', 'books', 'gadgets'], { required_error: "Please select a category." }),
@@ -41,7 +42,7 @@ const productSchema = z.object({
   additionalImageUrls: z.array(z.string().min(1, "Each additional image requires data.")).optional(), // Array of Data URIs
   videoUrl: z.string().optional().or(z.literal('')), // Data URI or empty
   aiHint: z.string().min(3, {message: "AI Hint must be at least 3 characters."}),
-  buyUrl: z.string().url({ message: "Please enter a valid buy URL." }),
+  buyUrl: z.string().url({ message: "Please enter a valid URL if provided." }).optional().or(z.literal('')),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -64,7 +65,7 @@ export default function AddProductPage() {
       additionalImageUrls: [],
       videoUrl: '',
       aiHint: '',
-      buyUrl: '#',
+      buyUrl: '', // Changed default to empty string
     },
   });
 
@@ -422,10 +423,13 @@ export default function AddProductPage() {
             name="buyUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Buy URL</FormLabel>
+                <FormLabel>Buy URL (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://example.com/product-link" {...field} />
+                  <Input placeholder="https://example.com/product-link" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                 </FormControl>
+                <FormDescription>
+                  If provided, users might be redirected here. Otherwise, the purchase form will be used.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
