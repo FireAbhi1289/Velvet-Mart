@@ -3,22 +3,23 @@
 import * as z from 'zod';
 import { addProduct, type Product } from '@/lib/data';
 
-// Schema for server-side validation. imageUrl now expects a data URI.
+// Schema for server-side validation. 
+// imageUrl, additionalImageUrls, and videoUrl now expect data URIs.
 const productSchema = z.object({
   name: z.string().min(3),
   category: z.enum(['jewelry', 'books', 'gadgets']),
   price: z.number().min(0.01),
   originalPrice: z.number().optional(),
   description: z.string().min(10),
-  // Validate that imageUrl is a string starting with "data:image/"
-  imageUrl: z.string().min(1, "Image data is missing").startsWith("data:image/", { message: "Invalid image data. Must be a data URI." }),
-  additionalImageUrls: z.array(z.string().url()).optional(),
-  videoUrl: z.string().url().optional().or(z.literal('')),
+  imageUrl: z.string().min(1, "Main image data is missing").startsWith("data:image/", { message: "Invalid main image data. Must be a data URI." }),
+  additionalImageUrls: z.array(
+    z.string().min(1, "Additional image data is missing").startsWith("data:image/", { message: "Invalid additional image data. Must be a data URI." })
+  ).optional(),
+  videoUrl: z.string().startsWith("data:video/", { message: "Invalid video data. Must be a data URI." }).optional().or(z.literal('')),
   aiHint: z.string().min(3),
   buyUrl: z.string().url(),
 });
 
-// This type remains the same as it's inferred from the schema above
 export type AddProductFormValues = z.infer<typeof productSchema>;
 
 interface AddProductActionResult {
@@ -40,27 +41,16 @@ export async function addProductAction(data: AddProductFormValues): Promise<AddP
   }
 
   try {
-    // The data.imageUrl is now a data URI.
-    // The addProduct function in lib/data.ts needs to be able to handle this.
-    // For now, we assume addProduct saves this string directly.
-    // In a production system, you'd upload this data URI to a storage service (e.g., Firebase Storage)
-    // and save the resulting URL.
+    // Data URIs for images and video are already in validationResult.data
+    // In a production system, you'd upload these data URIs to a storage service
+    // and save the resulting URLs. For this example, we save data URIs directly.
     
     const productDataToSave = {
       ...validationResult.data,
-      // imageUrl is already in the correct format (data URI string) from validationResult.data
       videoUrl: validationResult.data.videoUrl === '' ? undefined : validationResult.data.videoUrl,
       originalPrice: validationResult.data.originalPrice === 0 ? undefined : validationResult.data.originalPrice,
+      // additionalImageUrls is already an array of data URIs or undefined
     };
-
-    // TODO: In a real application, you would:
-    // 1. Parse the data URI (validationResult.data.imageUrl).
-    // 2. Decode the base64 content.
-    // 3. Upload the image bytes to a cloud storage (e.g., Firebase Storage, AWS S3).
-    // 4. Get the public URL of the uploaded image from the storage service.
-    // 5. Save *that* public URL in productDataToSave.imageUrl instead of the data URI.
-    // For this example, we'll save the data URI directly into products.json via addProduct.
-    // This is NOT recommended for production due to the size of data URIs.
 
     const newProduct = await addProduct(productDataToSave);
     return { success: true, product: newProduct };

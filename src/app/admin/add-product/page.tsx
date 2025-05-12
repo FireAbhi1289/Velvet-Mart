@@ -27,19 +27,19 @@ import { addProductAction } from '../actions'; // Server action
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, type ChangeEvent } from 'react';
 import Image from 'next/image';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Video, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Updated schema for file uploads
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters." }),
   category: z.enum(['jewelry', 'books', 'gadgets'], { required_error: "Please select a category." }),
   price: z.coerce.number().min(0.01, { message: "Price must be a positive number." }),
   originalPrice: z.coerce.number().optional().transform(val => val === 0 ? undefined : val),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  // imageUrl will now store a data URI
-  imageUrl: z.string({ required_error: "Please upload an image." }).min(1, { message: "Please upload an image." }),
-  additionalImageUrls: z.string().optional().transform(val => val ? val.split('\\n').map(url => url.trim()).filter(url => url) : []),
-  videoUrl: z.string().url({ message: "Please enter a valid video URL." }).optional().or(z.literal('')),
+  imageUrl: z.string({ required_error: "Please upload a main image." }).min(1, { message: "Please upload a main image." }), // Data URI
+  additionalImageUrls: z.array(z.string().min(1, "Each additional image requires data.")).optional(), // Array of Data URIs
+  videoUrl: z.string().optional().or(z.literal('')), // Data URI or empty
   aiHint: z.string().min(3, {message: "AI Hint must be at least 3 characters."}),
   buyUrl: z.string().url({ message: "Please enter a valid buy URL." }),
 });
@@ -49,7 +49,9 @@ type ProductFormValues = z.infer<typeof productSchema>;
 export default function AddProductPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [videoFilePreviewName, setVideoFilePreviewName] = useState<string | null>(null);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -58,7 +60,7 @@ export default function AddProductPage() {
       price: 0,
       originalPrice: undefined,
       description: '',
-      imageUrl: '', // Will hold data URI
+      imageUrl: '', 
       additionalImageUrls: [],
       videoUrl: '',
       aiHint: '',
@@ -67,22 +69,20 @@ export default function AddProductPage() {
   });
 
   useEffect(() => {
-    // Cleanup object URL to prevent memory leaks
+    // Cleanup object URLs to prevent memory leaks
     return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
+      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
+      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      // No object URL for video name preview
     };
-  }, [imagePreview]);
+  }, [mainImagePreview, additionalImagePreviews]);
 
-  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview); // Clean up previous preview
-      }
+      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
       const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
+      setMainImagePreview(previewUrl);
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -90,17 +90,65 @@ export default function AddProductPage() {
       };
       reader.readAsDataURL(file);
     } else {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-      setImagePreview(null);
+      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
+      setMainImagePreview(null);
       form.setValue('imageUrl', '', { shouldValidate: true });
+    }
+  };
+
+  const handleAdditionalImagesUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newPreviews: string[] = [];
+      const newDataUris: string[] = [];
+
+      // Clear previous previews and form values for additional images
+      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setAdditionalImagePreviews([]);
+      form.setValue('additionalImageUrls', []);
+
+      const fileReadPromises = Array.from(files).map(file => {
+        newPreviews.push(URL.createObjectURL(file));
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+
+      try {
+        const dataUris = await Promise.all(fileReadPromises);
+        setAdditionalImagePreviews(newPreviews);
+        form.setValue('additionalImageUrls', dataUris, { shouldValidate: true });
+      } catch (error) {
+        console.error("Error reading additional images:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not read additional images." });
+      }
+    } else {
+      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setAdditionalImagePreviews([]);
+      form.setValue('additionalImageUrls', [], { shouldValidate: true });
+    }
+  };
+
+  const handleVideoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setVideoFilePreviewName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('videoUrl', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setVideoFilePreviewName(null);
+      form.setValue('videoUrl', '', { shouldValidate: true });
     }
   };
 
   async function onSubmit(values: ProductFormValues) {
     try {
-      // The server action will now expect imageUrl to be a data URI
       const result = await addProductAction(values);
       if (result.success && result.product) {
         toast({
@@ -108,13 +156,17 @@ export default function AddProductPage() {
           description: `${result.product.name} has been successfully added.`,
         });
         form.reset();
-        setImagePreview(null); // Reset preview
+        setMainImagePreview(null);
+        setAdditionalImagePreviews([]);
+        additionalImagePreviews.forEach(url => URL.revokeObjectURL(url)); // Clean up
+        setVideoFilePreviewName(null);
         router.push('/admin'); 
       } else {
+         const errorMessages = result.errors?.map(e => `${e.path.join('.')}: ${e.message}`).join('\n') || result.error || "An unknown error occurred.";
         toast({
           variant: "destructive",
           title: "Error adding product",
-          description: result.error || "An unknown error occurred.",
+          description: <pre className="whitespace-pre-wrap">{errorMessages}</pre>,
         });
       }
     } catch (error) {
@@ -212,11 +264,10 @@ export default function AddProductPage() {
             )}
           />
           
-          {/* Main Image Upload Field */}
           <FormField
             control={form.control}
             name="imageUrl"
-            render={({ field }) => ( // field is used by form.setValue to store data URI
+            render={() => (
               <FormItem>
                 <FormLabel>Main Image</FormLabel>
                 <FormControl>
@@ -224,28 +275,28 @@ export default function AddProductPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      id="imageUpload"
+                      id="mainImageUpload"
                       className="hidden"
-                      onChange={handleImageUpload}
+                      onChange={handleMainImageUpload}
                     />
                     <label
-                      htmlFor="imageUpload"
+                      htmlFor="mainImageUpload"
                       className={cn(
                         "flex flex-col items-center justify-center w-full h-52 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
                         form.formState.errors.imageUrl ? "border-destructive" : "border-input"
                       )}
                     >
-                      {imagePreview ? (
+                      {mainImagePreview ? (
                         <div className="relative w-full h-full">
-                          <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="contain" className="rounded-md" />
+                          <Image src={mainImagePreview} alt="Main Image Preview" layout="fill" objectFit="contain" className="rounded-md" />
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
                           <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                           <p className="mb-2 text-sm text-muted-foreground">
-                            <span className="font-semibold">Click to upload</span>
+                            <span className="font-semibold">Click to upload main image</span>
                           </p>
-                          <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
                         </div>
                       )}
                     </label>
@@ -255,7 +306,6 @@ export default function AddProductPage() {
               </FormItem>
             )}
           />
-
 
           <FormField
             control={form.control}
@@ -275,13 +325,45 @@ export default function AddProductPage() {
           <FormField
             control={form.control}
             name="additionalImageUrls"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
-                <FormLabel>Additional Image URLs (Optional)</FormLabel>
+                <FormLabel>Additional Images (Optional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="One URL per line" {...field} onChange={e => field.onChange(e.target.value)} />
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      id="additionalImagesUpload"
+                      className="hidden"
+                      onChange={handleAdditionalImagesUpload}
+                    />
+                    <label
+                      htmlFor="additionalImagesUpload"
+                      className={cn(
+                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
+                        form.formState.errors.additionalImageUrls ? "border-destructive" : "border-input"
+                      )}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold">Click to upload additional images</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
+                      </div>
+                    </label>
+                  </div>
                 </FormControl>
-                <FormDescription>Enter each URL on a new line. For uploaded images, use a hosting service and paste URLs here.</FormDescription>
+                {additionalImagePreviews.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {additionalImagePreviews.map((previewUrl, index) => (
+                      <div key={index} className="relative aspect-square">
+                        <Image src={previewUrl} alt={`Additional preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -290,11 +372,45 @@ export default function AddProductPage() {
           <FormField
             control={form.control}
             name="videoUrl"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
-                <FormLabel>Video URL (Optional)</FormLabel>
+                <FormLabel>Product Video (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://youtube.com/embed/video_id" {...field} />
+                  <div>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      id="videoUpload"
+                      className="hidden"
+                      onChange={handleVideoUpload}
+                    />
+                    <label
+                      htmlFor="videoUpload"
+                      className={cn(
+                        "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
+                        form.formState.errors.videoUrl ? "border-destructive" : "border-input"
+                      )}
+                    >
+                      {videoFilePreviewName ? (
+                        <div className="flex flex-col items-center justify-center text-center">
+                           <Video className="w-10 h-10 mb-2 text-muted-foreground" />
+                           <p className="text-sm text-muted-foreground font-semibold">Video Selected:</p>
+                           <p className="text-xs text-muted-foreground truncate max-w-xs">{videoFilePreviewName}</p>
+                           <Button variant="ghost" size="sm" className="mt-1 text-destructive hover:text-destructive-foreground" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVideoFilePreviewName(null); form.setValue('videoUrl', '', { shouldValidate: true }); const input = document.getElementById('videoUpload') as HTMLInputElement; if(input) input.value = '';}}>
+                             <XCircle className="mr-1 h-4 w-4"/> Remove
+                           </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                          <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                           <p className="text-sm text-muted-foreground">
+                            <span className="font-semibold">Click to upload video</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">MP4, MOV, AVI etc.</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
