@@ -28,9 +28,11 @@ async function readProductsFromFile(): Promise<Product[]> {
   } catch (error) {
     console.error('Error reading products.json:', error);
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      // If file doesn't exist, create it with an empty array
       await writeProductsToFile([]); 
-      return [];
+      return []; // Return an empty array
     }
+    // For other errors, rethrow them
     throw error; 
   }
 }
@@ -93,27 +95,33 @@ export async function updateProduct(productId: string, productData: Partial<Omit
     return null; // Product not found
   }
 
+  const updatedProductData = { ...productData };
+  // Ensure buyUrl is set to undefined if it's an empty string, otherwise use its value.
+  if (typeof productData.buyUrl === 'string' && productData.buyUrl.trim() === '') {
+    updatedProductData.buyUrl = undefined;
+  }
+
+
   const updatedProduct = {
     ...products[productIndex],
-    ...productData,
-    buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl,
+    ...updatedProductData,
   };
   products[productIndex] = updatedProduct;
   await writeProductsToFile(products);
   return updatedProduct;
 }
 
-export async function deleteProduct(productId: string): Promise<boolean> {
+export async function deleteProduct(productId: string): Promise<Product | null> {
   let products = await readProductsFromFile();
-  const initialLength = products.length;
-  products = products.filter(p => p.id !== productId);
-
-  if (products.length === initialLength) {
-    return false; // Product not found or not deleted
+  const productToDelete = products.find(p => p.id === productId);
+  
+  if (!productToDelete) {
+    return null; // Product not found
   }
 
+  products = products.filter(p => p.id !== productId);
   await writeProductsToFile(products);
-  return true; // Product deleted successfully
+  return productToDelete; // Return the deleted product
 }
 
 
@@ -166,26 +174,5 @@ export const productsForStaticGeneration: Product[] = [
   },
 ];
 
-// Ensure products.json exists on startup
-(async () => {
-  try {
-    await fs.access(productsFilePath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      console.log('products.json not found, creating an empty one if not in read-only filesystem.');
-      try {
-        await writeProductsToFile([]);
-      } catch (writeError) {
-        // In some environments (like Vercel serverless functions), filesystem might be read-only after build.
-        // This is fine if products.json was included in the build.
-        if ((writeError as NodeJS.ErrnoException).code === 'EROFS') {
-          console.log('Read-only filesystem, products.json will not be created if missing.');
-        } else {
-          console.error('Error creating empty products.json:', writeError);
-        }
-      }
-    } else {
-      console.error('Error checking products.json:', error);
-    }
-  }
-})();
+// Removed the IIFE that was causing fs/promises issues on client-side imports.
+// The products.json file creation is handled by readProductsFromFile if it doesn't exist.
