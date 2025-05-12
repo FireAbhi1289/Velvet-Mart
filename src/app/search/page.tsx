@@ -1,10 +1,11 @@
 
-import { getProductsBySearchTerm, Product } from '@/lib/data';
+
+import { getProductsBySearchTerm, type Product } from '@/lib/data'; // Updated import
 import ProductCard from '@/components/product-card';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
-import SearchBar from '@/components/search-bar'; // Import SearchBar for consistency
+import SearchBar from '@/components/search-bar';
 import { Suspense } from 'react';
 
 type SearchPageProps = {
@@ -27,8 +28,8 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   };
 }
 
-function SearchResults({ searchTerm }: { searchTerm: string }) {
-  const products = getProductsBySearchTerm(searchTerm);
+async function SearchResults({ searchTerm }: { searchTerm: string }) {
+  const products = await getProductsBySearchTerm(searchTerm); // Now async
 
   return (
     <>
@@ -76,7 +77,7 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
         </div>
       </div>
       
-      <Suspense fallback={<p className="text-center">Loading search results...</p>}>
+      <Suspense fallback={<p className="text-center text-muted-foreground">Loading search results...</p>}>
         {searchTerm ? (
           <SearchResults searchTerm={searchTerm} />
         ) : (

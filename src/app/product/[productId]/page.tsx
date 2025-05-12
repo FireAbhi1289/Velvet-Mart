@@ -1,12 +1,12 @@
-import { getProductById, products as allProducts } from '@/lib/data';
+
+import { getProductById, productsForStaticGeneration as allProducts, type Product } from '@/lib/data'; // Updated import
 import { notFound } from 'next/navigation';
-// Image component from next/image is no longer directly used here for main display, handled by gallery
 import { Button } from '@/components/ui/button';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import BuyButton from '@/components/buy-button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
-import ProductMediaGallery from '@/components/product-media-gallery'; // Import the new gallery component
+import ProductMediaGallery from '@/components/product-media-gallery';
 
 type ProductPageProps = {
   params: {
@@ -15,13 +15,14 @@ type ProductPageProps = {
 };
 
 export async function generateStaticParams() {
+  // Use the static list for generating params during build
   return allProducts.map((product) => ({
     productId: product.id,
   }));
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = getProductById(params.productId);
+  const product = await getProductById(params.productId); // Now async
 
   if (!product) {
     return {
@@ -36,8 +37,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = getProductById(params.productId);
+export default async function ProductPage({ params }: ProductPageProps) {
+  const product = await getProductById(params.productId); // Now async
 
   if (!product) {
     notFound();
@@ -68,7 +69,6 @@ export default function ProductPage({ params }: ProductPageProps) {
       </Breadcrumb>
 
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
-        {/* Replace single image with ProductMediaGallery */}
         <ProductMediaGallery product={product} />
 
         <div className="space-y-6">
@@ -91,16 +91,6 @@ export default function ProductPage({ params }: ProductPageProps) {
              <p className="text-sm text-muted-foreground pt-2">Category: <Link href={`/${product.category}`} className="hover:underline text-primary">{categoryName}</Link></p>
         </div>
       </div>
-
-      {/* Optional: Related Products Section */}
-      {/*
-      <section>
-        <h2 className="text-2xl font-semibold mb-4">You Might Also Like</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {* Render related product cards here *}
-        </div>
-      </section>
-      */}
     </div>
   );
 }

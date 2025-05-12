@@ -1,10 +1,11 @@
-import { getProductsByCategory, Product } from '@/lib/data';
+
+import { getProductsByCategory, type Product } from '@/lib/data'; // Updated import
 import ProductCard from '@/components/product-card';
 import { notFound } from 'next/navigation';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
-import SearchBar from '@/components/search-bar'; // Import the SearchBar
+import SearchBar from '@/components/search-bar';
 
 
 type CategoryPageProps = {
@@ -14,7 +15,11 @@ type CategoryPageProps = {
 };
 
 // Function to generate static paths for categories
+// This might need adjustment if categories become fully dynamic from products.json
 export async function generateStaticParams() {
+  // For now, keep predefined categories for static generation.
+  // If you want this to be dynamic based on products.json,
+  // you'd read the file here and extract unique categories.
   const categories = ['jewelry', 'books', 'gadgets'];
   return categories.map((category) => ({
     category,
@@ -40,7 +45,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   };
 }
 
-export default function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
   const category = params.category as Product['category'];
   const validCategories: Product['category'][] = ['jewelry', 'books', 'gadgets'];
 
@@ -48,7 +53,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const products = getProductsByCategory(category);
+  const products = await getProductsByCategory(category); // Now async
   const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
 
   return (
@@ -69,7 +74,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">{categoryName}</h1>
-        {/* Add SearchBar */}
         <SearchBar />
       </div>
 
