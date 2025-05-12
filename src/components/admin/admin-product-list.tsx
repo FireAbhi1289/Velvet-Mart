@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -5,11 +6,12 @@ import type { Product } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, Search } from 'lucide-react'; // Added Search icon
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import DeleteProductButton from '@/components/admin/delete-product-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input'; // Added Input for search
 
 interface AdminProductListClientProps {
   initialProducts: Product[];
@@ -19,6 +21,7 @@ const productCategories: Product['category'][] = ['jewelry', 'books', 'gadgets']
 
 export default function AdminProductListClient({ initialProducts }: AdminProductListClientProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -26,20 +29,33 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
   }, []);
 
   const productsToDisplay = useMemo(() => {
-    if (selectedCategory === 'all') {
-      return initialProducts;
+    let filteredProducts = initialProducts;
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filteredProducts = filteredProducts.filter(product => product.category === selectedCategory);
     }
-    return initialProducts.filter(product => product.category === selectedCategory);
-  }, [initialProducts, selectedCategory]);
+
+    // Filter by search term
+    if (searchTerm.trim() !== '') {
+      const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+      filteredProducts = filteredProducts.filter(product =>
+        product.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        product.description.toLowerCase().includes(lowercasedSearchTerm)
+      );
+    }
+
+    return filteredProducts;
+  }, [initialProducts, selectedCategory, searchTerm]);
 
   if (!mounted) {
-    // Optional: Show a loading state or skeleton cards to prevent hydration mismatch issues
-    // or to provide a better UX if initialProducts takes time to load
     return (
       <div className="space-y-4">
-        <div className="flex justify-start">
-          {/* Placeholder for select to maintain layout consistency */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Placeholder for select */}
           <div className="w-full md:w-[200px] h-10 bg-muted rounded-md animate-pulse"></div>
+          {/* Placeholder for search input */}
+          <div className="flex-grow h-10 bg-muted rounded-md animate-pulse"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => (
@@ -56,7 +72,7 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-start">
+      <div className="flex flex-col md:flex-row gap-4">
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full md:w-[200px]">
             <SelectValue placeholder="Filter by category" />
@@ -70,6 +86,16 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
             ))}
           </SelectContent>
         </Select>
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search products by name or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full"
+          />
+        </div>
       </div>
 
       {productsToDisplay.length > 0 ? (
@@ -116,7 +142,7 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
         <Card className="col-span-full">
           <CardContent className="p-6 text-center">
             <p className="text-muted-foreground">
-              {initialProducts.length === 0 ? "No products found. Add your first product!" : "No products found for this category."}
+              {initialProducts.length === 0 ? "No products found. Add your first product!" : (searchTerm ? "No products match your search and category filters." : "No products found for this category.")}
             </p>
           </CardContent>
         </Card>
@@ -124,3 +150,4 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
     </div>
   );
 }
+
