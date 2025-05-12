@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +25,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { addProductAction } from '../actions'; // Server action
 import { useRouter } from 'next/navigation';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import Image from 'next/image';
+import { UploadCloud } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters." }),
@@ -33,7 +36,8 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, { message: "Price must be a positive number." }),
   originalPrice: z.coerce.number().optional().transform(val => val === 0 ? undefined : val),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  imageUrl: z.string().url({ message: "Please enter a valid image URL." }),
+  // imageUrl will now store a data URI
+  imageUrl: z.string({ required_error: "Please upload an image." }).min(1, { message: "Please upload an image." }),
   additionalImageUrls: z.string().optional().transform(val => val ? val.split('\\n').map(url => url.trim()).filter(url => url) : []),
   videoUrl: z.string().url({ message: "Please enter a valid video URL." }).optional().or(z.literal('')),
   aiHint: z.string().min(3, {message: "AI Hint must be at least 3 characters."}),
@@ -45,6 +49,8 @@ type ProductFormValues = z.infer<typeof productSchema>;
 export default function AddProductPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -52,16 +58,49 @@ export default function AddProductPage() {
       price: 0,
       originalPrice: undefined,
       description: '',
-      imageUrl: '',
+      imageUrl: '', // Will hold data URI
       additionalImageUrls: [],
       videoUrl: '',
       aiHint: '',
-      buyUrl: '#', // Default buyUrl
+      buyUrl: '#',
     },
   });
 
+  useEffect(() => {
+    // Cleanup object URL to prevent memory leaks
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview); // Clean up previous preview
+      }
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('imageUrl', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      setImagePreview(null);
+      form.setValue('imageUrl', '', { shouldValidate: true });
+    }
+  };
+
   async function onSubmit(values: ProductFormValues) {
     try {
+      // The server action will now expect imageUrl to be a data URI
       const result = await addProductAction(values);
       if (result.success && result.product) {
         toast({
@@ -69,7 +108,8 @@ export default function AddProductPage() {
           description: `${result.product.name} has been successfully added.`,
         });
         form.reset();
-        router.push('/admin'); // Redirect to admin dashboard
+        setImagePreview(null); // Reset preview
+        router.push('/admin'); 
       } else {
         toast({
           variant: "destructive",
@@ -171,21 +211,52 @@ export default function AddProductPage() {
               </FormItem>
             )}
           />
-
+          
+          {/* Main Image Upload Field */}
           <FormField
             control={form.control}
             name="imageUrl"
-            render={({ field }) => (
+            render={({ field }) => ( // field is used by form.setValue to store data URI
               <FormItem>
-                <FormLabel>Main Image URL</FormLabel>
+                <FormLabel>Main Image</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://example.com/image.jpg" {...field} />
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="imageUpload"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                    <label
+                      htmlFor="imageUpload"
+                      className={cn(
+                        "flex flex-col items-center justify-center w-full h-52 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
+                        form.formState.errors.imageUrl ? "border-destructive" : "border-input"
+                      )}
+                    >
+                      {imagePreview ? (
+                        <div className="relative w-full h-full">
+                          <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="contain" className="rounded-md" />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                          <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            <span className="font-semibold">Click to upload</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
+
           <FormField
             control={form.control}
             name="aiHint"
@@ -195,7 +266,7 @@ export default function AddProductPage() {
                 <FormControl>
                   <Input placeholder="e.g., silver necklace elegant pendant" {...field} />
                 </FormControl>
-                <FormDescription>Keywords for image search if placeholder is used.</FormDescription>
+                <FormDescription>Keywords for image search if placeholder is used, or for general classification.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -210,7 +281,7 @@ export default function AddProductPage() {
                 <FormControl>
                   <Textarea placeholder="One URL per line" {...field} onChange={e => field.onChange(e.target.value)} />
                 </FormControl>
-                <FormDescription>Enter each URL on a new line.</FormDescription>
+                <FormDescription>Enter each URL on a new line. For uploaded images, use a hosting service and paste URLs here.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
