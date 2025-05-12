@@ -3,9 +3,10 @@ import { getAllProducts, type Product } from '@/lib/data';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react'; // Icons for actions
+import { PlusCircle, Edit } from 'lucide-react'; 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import DeleteProductButton from '@/components/admin/delete-product-button';
 
 export default async function AdminDashboardPage() {
   const products = await getAllProducts();
@@ -43,17 +44,20 @@ export default async function AdminDashboardPage() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-lg font-semibold text-primary">${product.price.toFixed(2)}</p>
+                {product.originalPrice && product.originalPrice > product.price && (
+                    <p className="text-sm text-muted-foreground line-through">
+                        ${product.originalPrice.toFixed(2)}
+                    </p>
+                )}
                 <p className="text-sm text-muted-foreground line-clamp-3">{product.description}</p>
               </CardContent>
               <CardFooter className="flex justify-end gap-2">
-                {/* Future enhancement: Edit and Delete buttons */}
-                {/* <Button variant="outline" size="icon" disabled title="Edit (coming soon)">
-                  <Edit className="h-4 w-4" />
+                <Button variant="outline" size="icon" asChild title="Edit Product">
+                  <Link href={`/admin/edit-product/${product.id}`}>
+                    <Edit className="h-4 w-4" />
+                  </Link>
                 </Button>
-                <Button variant="destructive" size="icon" disabled title="Delete (coming soon)">
-                  <Trash2 className="h-4 w-4" />
-                </Button> */}
-                 <p className="text-xs text-muted-foreground">Edit/Delete coming soon</p>
+                <DeleteProductButton productId={product.id} productName={product.name} />
               </CardFooter>
             </Card>
           ))}

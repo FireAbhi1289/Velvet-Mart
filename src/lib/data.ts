@@ -1,3 +1,4 @@
+
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
@@ -9,11 +10,11 @@ export type Product = {
   price: number;
   originalPrice?: number;
   description: string;
-  imageUrl: string;
-  additionalImageUrls?: string[];
-  videoUrl?: string;
+  imageUrl: string; // Data URI
+  additionalImageUrls?: string[]; // Array of Data URIs
+  videoUrl?: string; // Data URI
   aiHint: string;
-  buyUrl?: string; // Made optional
+  buyUrl?: string;
 };
 
 // Path to the JSON file
@@ -26,19 +27,18 @@ async function readProductsFromFile(): Promise<Product[]> {
     return JSON.parse(jsonData) as Product[];
   } catch (error) {
     console.error('Error reading products.json:', error);
-    // If file doesn't exist or is empty, return an empty array
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await writeProductsToFile([]); // Create an empty file if it doesn't exist
+      await writeProductsToFile([]); 
       return [];
     }
-    throw error; // Rethrow other errors
+    throw error; 
   }
 }
 
 // Helper function to write products to JSON file
 async function writeProductsToFile(products: Product[]): Promise<void> {
   try {
-    const jsonData = JSON.stringify(products, null, 2); // Pretty print JSON
+    const jsonData = JSON.stringify(products, null, 2); 
     await fs.writeFile(productsFilePath, jsonData, 'utf-8');
   } catch (error) {
     console.error('Error writing to products.json:', error);
@@ -73,36 +73,51 @@ export async function getProductsBySearchTerm(term: string): Promise<Product[]> 
   );
 }
 
-// Function to add a new product
 export async function addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
   const products = await readProductsFromFile();
   const newProduct: Product = {
     ...productData,
-    id: uuidv4(), // Generate a unique ID
-    buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl, // Ensure empty string becomes undefined
+    id: uuidv4(),
+    buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl,
   };
   products.push(newProduct);
   await writeProductsToFile(products);
   return newProduct;
 }
 
-// Note: Functions for updating and deleting products would follow a similar pattern:
-// 1. Read products from file.
-// 2. Find and modify/remove the product.
-// 3. Write the updated list back to the file.
-// These are not implemented here for brevity but would be needed for full CRUD.
+export async function updateProduct(productId: string, productData: Partial<Omit<Product, 'id'>>): Promise<Product | null> {
+  const products = await readProductsFromFile();
+  const productIndex = products.findIndex(p => p.id === productId);
 
-// This is used by generateStaticParams, needs to be synchronous or adapted.
-// For now, we'll keep the original static list for param generation,
-// but live data will come from the JSON.
-// This means new products added via admin won't be statically generated until next build
-// unless dynamic rendering is forced or revalidation strategies are used.
+  if (productIndex === -1) {
+    return null; // Product not found
+  }
+
+  const updatedProduct = {
+    ...products[productIndex],
+    ...productData,
+    buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl,
+  };
+  products[productIndex] = updatedProduct;
+  await writeProductsToFile(products);
+  return updatedProduct;
+}
+
+export async function deleteProduct(productId: string): Promise<boolean> {
+  let products = await readProductsFromFile();
+  const initialLength = products.length;
+  products = products.filter(p => p.id !== productId);
+
+  if (products.length === initialLength) {
+    return false; // Product not found or not deleted
+  }
+
+  await writeProductsToFile(products);
+  return true; // Product deleted successfully
+}
+
+
 export const productsForStaticGeneration: Product[] = [
-  // Keep a minimal list or your most common products for static generation
-  // This ensures build doesn't fail if products.json is initially empty
-  // Or, adjust generateStaticParams to fetch dynamically if possible for your use case
-  // For simplicity, I'm copying the initial set.
-  // In a real scenario, you might fetch this list once at build time.
     {
     id: 'jwl1',
     name: 'Silver Necklace',
@@ -157,8 +172,18 @@ export const productsForStaticGeneration: Product[] = [
     await fs.access(productsFilePath);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      console.log('products.json not found, creating an empty one.');
-      await writeProductsToFile([]);
+      console.log('products.json not found, creating an empty one if not in read-only filesystem.');
+      try {
+        await writeProductsToFile([]);
+      } catch (writeError) {
+        // In some environments (like Vercel serverless functions), filesystem might be read-only after build.
+        // This is fine if products.json was included in the build.
+        if ((writeError as NodeJS.ErrnoException).code === 'EROFS') {
+          console.log('Read-only filesystem, products.json will not be created if missing.');
+        } else {
+          console.error('Error creating empty products.json:', writeError);
+        }
+      }
     } else {
       console.error('Error checking products.json:', error);
     }
