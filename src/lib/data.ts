@@ -24,16 +24,24 @@ const productsFilePath = path.join(process.cwd(), 'src', 'products.json');
 async function readProductsFromFile(): Promise<Product[]> {
   try {
     const jsonData = await fs.readFile(productsFilePath, 'utf-8');
-    return JSON.parse(jsonData) as Product[];
+    try {
+      return JSON.parse(jsonData) as Product[];
+    } catch (parseError) {
+      console.error('Error parsing products.json:', parseError);
+      // If parsing fails, return an empty array to prevent site crash
+      // Optionally, you could try to recover or use a default set of products
+      return []; 
+    }
   } catch (error) {
-    console.error('Error reading products.json:', error);
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    const nodeError = error as NodeJS.ErrnoException;
+    console.error('Error reading products.json:', nodeError.message);
+    if (nodeError.code === 'ENOENT') {
       // If file doesn't exist, create it with an empty array
       await writeProductsToFile([]); 
       return []; // Return an empty array
     }
-    // For other errors, rethrow them
-    throw error; 
+    // For other read errors, return empty array to prevent crash
+    return []; 
   }
 }
 
@@ -44,7 +52,7 @@ async function writeProductsToFile(products: Product[]): Promise<void> {
     await fs.writeFile(productsFilePath, jsonData, 'utf-8');
   } catch (error) {
     console.error('Error writing to products.json:', error);
-    throw error;
+    // Don't rethrow here as it might happen during a read operation's recovery attempt
   }
 }
 
@@ -75,7 +83,9 @@ export async function getProductsBySearchTerm(term: string): Promise<Product[]> 
   );
 }
 
-export async function addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
+export type AddProductData = Omit<Product, 'id'>;
+
+export async function addProduct(productData: AddProductData): Promise<Product> {
   const products = await readProductsFromFile();
   const newProduct: Product = {
     ...productData,
@@ -87,7 +97,9 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
   return newProduct;
 }
 
-export async function updateProduct(productId: string, productData: Partial<Omit<Product, 'id'>>): Promise<Product | null> {
+export type UpdateProductData = Partial<Omit<Product, 'id'>>;
+
+export async function updateProduct(productId: string, productData: UpdateProductData): Promise<Product | null> {
   const products = await readProductsFromFile();
   const productIndex = products.findIndex(p => p.id === productId);
 
@@ -95,16 +107,18 @@ export async function updateProduct(productId: string, productData: Partial<Omit
     return null; // Product not found
   }
 
-  const updatedProductData = { ...productData };
+  // Create a new object for the updated product data to avoid mutating the input
+  const safeProductData: UpdateProductData = { ...productData };
+
   // Ensure buyUrl is set to undefined if it's an empty string, otherwise use its value.
-  if (typeof productData.buyUrl === 'string' && productData.buyUrl.trim() === '') {
-    updatedProductData.buyUrl = undefined;
+  if (typeof safeProductData.buyUrl === 'string' && safeProductData.buyUrl.trim() === '') {
+    safeProductData.buyUrl = undefined;
   }
 
 
-  const updatedProduct = {
+  const updatedProduct: Product = {
     ...products[productIndex],
-    ...updatedProductData,
+    ...safeProductData, // Use the safe copy
   };
   products[productIndex] = updatedProduct;
   await writeProductsToFile(products);
@@ -125,6 +139,10 @@ export async function deleteProduct(productId: string): Promise<Product | null> 
 }
 
 
+// This list is used by generateStaticParams. 
+// It's kept separate to avoid reading the file during build time for this specific purpose if not needed,
+// though currently, pages will call readProductsFromFile anyway.
+// For a truly static site with many products, this might come from a build script.
 export const productsForStaticGeneration: Product[] = [
     {
     id: 'jwl1',
@@ -138,7 +156,7 @@ export const productsForStaticGeneration: Product[] = [
       'https://picsum.photos/seed/jwl1-alt1/600/600',
       'https://picsum.photos/seed/jwl1-alt2/600/600',
     ],
-    videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1',
+    videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', // Placeholder for actual video URL
     aiHint: 'silver necklace elegant pendant',
     buyUrl: '#',
   },
@@ -168,11 +186,8 @@ export const productsForStaticGeneration: Product[] = [
       'https://picsum.photos/seed/gdg1-alt1/600/600',
       'https://picsum.photos/seed/gdg1-alt2/600/600',
     ],
-    "videoUrl": 'https://www.youtube.com/embed/placeholder_video_id_gadget1',
+    "videoUrl": 'https://www.youtube.com/embed/placeholder_video_id_gadget1', // Placeholder
     "aiHint": 'wireless earbuds modern sleek',
     "buyUrl": '#',
   },
 ];
-
-// Removed the IIFE that was causing fs/promises issues on client-side imports.
-// The products.json file creation is handled by readProductsFromFile if it doesn't exist.
