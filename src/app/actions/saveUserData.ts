@@ -22,7 +22,7 @@ const UserDataSchema = z.object({
 });
 
 // NOT EXPORTED
-export type UserData = z.infer<typeof UserDataSchema>;
+type UserData = z.infer<typeof UserDataSchema>;
 
 interface SaveUserDataResult {
   success: boolean;
@@ -45,43 +45,16 @@ export async function saveUserDataAction(data: UserData): Promise<SaveUserDataRe
   }
 
   try {
-    let existingData: UserData[] = [];
-    try {
-      const fileContent = await fs.readFile(userDataFilePath, 'utf-8');
-      const parsedContent = JSON.parse(fileContent);
-      if (Array.isArray(parsedContent)) {
-        existingData = parsedContent;
-      } else {
-        console.warn('userdata.json does not contain a valid array. Initializing with new data. Old data might be lost.');
-        existingData = []; // Initialize to prevent further errors
-      }
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
-        // File doesn't exist, which is fine. We'll create it.
-        console.log('userdata.json not found, will be created.');
-      } else if (error instanceof SyntaxError) {
-         // File exists but is not valid JSON
-        console.warn('userdata.json contains invalid JSON. Initializing with new data. Old data might be lost.');
-        existingData = []; // Initialize to prevent further errors
-      }
-       else {
-        // Other read errors
-        console.error('Error reading userdata.json:', error.message);
-        return {
-          success: false,
-          message: 'Failed to read existing user data file.',
-          error: error.message,
-        };
-      }
-    }
+    // Ensure the directory exists (though /src/components/ should already exist)
+    // No need to read existing data if we are overwriting
+    await fs.mkdir(path.dirname(userDataFilePath), { recursive: true });
 
-    existingData.push(validationResult.data);
-
-    await fs.writeFile(userDataFilePath, JSON.stringify(existingData, null, 2), 'utf-8');
+    // Overwrite the file with the new data object
+    await fs.writeFile(userDataFilePath, JSON.stringify(validationResult.data, null, 2), 'utf-8');
 
     return {
       success: true,
-      message: 'User data saved successfully to userdata.json.',
+      message: 'User data saved successfully to userdata.json (overwritten).',
     };
   } catch (error: any) {
     console.error('Error saving user data to file:', error.message);
