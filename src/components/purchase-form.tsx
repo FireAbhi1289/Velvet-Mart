@@ -5,7 +5,7 @@ import type { Product } from '@/lib/data';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Added useEffect and useRef
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,13 +37,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { saveUserDataAction, type UserData } from '@/app/actions/saveUserData';
-import { useToast } from '@/hooks/use-toast'; // Added for error feedback
+import { saveUserDataAction } from '@/app/actions/saveUserData'; // Renamed UserData to FormInputData in action
+import type { UserData as FormInputData } from '@/app/actions/saveUserData'; // Use the renamed type
+import { useToast } from '@/hooks/use-toast';
 
+// Schema for the form values (client-side)
 const purchaseFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }),
-  phone: z.string().regex(/^\d{10,15}$/, { message: "Phone number must be 10-15 digits." }), // Adjusted regex
+  phone: z.string().regex(/^\d{10,15}$/, { message: "Phone number must be 10-15 digits." }),
   email: z.string().email({ message: "Invalid email address." }),
   socialMedia: z.string().optional().or(z.literal('')),
   pinCode: z.string().regex(/^\d{6}$/, { message: "PIN code must be 6 digits." }),
@@ -60,10 +62,10 @@ interface PurchaseFormProps {
 }
 
 export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFormProps) {
-  const { toast } = useToast(); // For error feedback
+  const { toast } = useToast();
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const nameInputRef = useRef<HTMLInputElement>(null); // Ref for the first input field
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -79,16 +81,27 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
     },
   });
 
+  useEffect(() => {
+    if (open && nameInputRef.current) {
+      // Timeout to ensure the dialog is fully rendered and focusable
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100); // Small delay, adjust if needed
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   async function onSubmit(values: PurchaseFormValues) {
     setIsSubmitting(true);
-    const dataToSave: UserData = {
+    const dataToSave: FormInputData = {
       ...values,
       productName: product.name,
       productId: product.id,
       timestamp: new Date().toISOString(),
     };
-
+    
     const result = await saveUserDataAction(dataToSave);
+    
     setIsSubmitting(false);
 
     if (result.success) {
@@ -115,7 +128,7 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
     <>
       <Dialog open={open} onOpenChange={(isOpen) => {
         if (!isOpen) {
-            if (!isConfirmationDialogOpen) form.reset(); // Reset form only if not closed due to confirmation
+            if (!isConfirmationDialogOpen) form.reset(); 
         }
         onOpenChange(isOpen);
       }}>
@@ -136,7 +149,7 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input placeholder="John Doe" {...field} ref={nameInputRef} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
