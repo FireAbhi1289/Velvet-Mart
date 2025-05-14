@@ -36,13 +36,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-// useToast import is no longer needed
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { saveUserDataAction, type UserData } from '@/app/actions/saveUserData';
+import { useToast } from '@/hooks/use-toast'; // Added for error feedback
 
 const purchaseFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }),
-  phone: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }),
+  phone: z.string().regex(/^\d{10,15}$/, { message: "Phone number must be 10-15 digits." }), // Adjusted regex
   email: z.string().email({ message: "Invalid email address." }),
   socialMedia: z.string().optional().or(z.literal('')),
   pinCode: z.string().regex(/^\d{6}$/, { message: "PIN code must be 6 digits." }),
@@ -59,8 +60,10 @@ interface PurchaseFormProps {
 }
 
 export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFormProps) {
-  // const { toast } = useToast(); // Toast is no longer used
+  const { toast } = useToast(); // For error feedback
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -77,13 +80,29 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
   });
 
   async function onSubmit(values: PurchaseFormValues) {
-    console.log("Purchase Form Submitted:", {
-      product: { id: product.id, name: product.name },
-      orderDetails: values,
-    });
-    // Instead of toast, open the confirmation dialog
-    setIsConfirmationDialogOpen(true);
-    // We will reset form and close main dialog after confirmation dialog is closed
+    setIsSubmitting(true);
+    const dataToSave: UserData = {
+      ...values,
+      productName: product.name,
+      productId: product.id,
+      timestamp: new Date().toISOString(),
+    };
+
+    const result = await saveUserDataAction(dataToSave);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      console.log(result.message);
+      setIsConfirmationDialogOpen(true);
+      // Form reset and dialog close will happen after confirmation dialog is closed
+    } else {
+      console.error('Failed to save user data:', result.message, result.error, result.errors);
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: result.message || "Could not save your information. Please try again.",
+      });
+    }
   }
 
   const handleConfirmationDialogClose = () => {
@@ -95,8 +114,8 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => {
-        if (!isOpen) { // if the main dialog is closed (e.g. by clicking outside or X)
-            form.reset(); // Reset form if dialog is closed without submitting
+        if (!isOpen) {
+            if (!isConfirmationDialogOpen) form.reset(); // Reset form only if not closed due to confirmation
         }
         onOpenChange(isOpen);
       }}>
@@ -221,13 +240,12 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
           </ScrollArea>
           <DialogFooter className="pt-4">
             <DialogClose asChild>
-              <Button type="button" variant="outline" onClick={() => form.reset()}>
+              <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false);}} disabled={isSubmitting}>
                 Cancel
               </Button>
             </DialogClose>
-            {/* Submit button now directly uses the form's onSubmit handler */}
-            <Button type="submit" form="purchaseForm">
-              Submit Order
+            <Button type="submit" form="purchaseForm" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -238,7 +256,7 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
           <AlertDialogHeader>
             <AlertDialogTitle>Order Submitted!</AlertDialogTitle>
             <AlertDialogDescription>
-              Your order request is submitted. We will contact you within 4 hours for confirming order.
+              Your order request is submitted. We will contact you within 3 hours for confirming order.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
