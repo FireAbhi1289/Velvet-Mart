@@ -6,7 +6,8 @@ import path from 'path';
 import * as z from 'zod';
 
 // Schema for the data to be saved (matching PurchaseFormValues from client, plus some context)
-export const UserDataSchema = z.object({
+// NOT EXPORTED
+const UserDataSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   address: z.string().min(10, { message: "Address must be at least 10 characters." }),
   phone: z.string().regex(/^\d{10,15}$/, { message: "Phone number must be 10-15 digits." }), // Adjusted regex for common phone lengths
@@ -20,6 +21,7 @@ export const UserDataSchema = z.object({
   timestamp: z.string().datetime(),
 });
 
+// NOT EXPORTED
 export type UserData = z.infer<typeof UserDataSchema>;
 
 interface SaveUserDataResult {
