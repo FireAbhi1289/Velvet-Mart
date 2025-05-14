@@ -5,7 +5,7 @@ import type { Product } from '@/lib/data';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { useState, useEffect, useRef } from 'react'; // Added useEffect and useRef
+import { useState, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,8 +37,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { saveUserDataAction } from '@/app/actions/saveUserData'; // Renamed UserData to FormInputData in action
-import type { UserData as FormInputData } from '@/app/actions/saveUserData'; // Use the renamed type
+import { saveUserDataAction, type UserData as FormInputData } from '@/app/actions/saveUserData';
+import { notifyOrderViaTelegram, type OrderDetailsForTelegram } from '@/app/actions/telegram-actions';
 import { useToast } from '@/hooks/use-toast';
 
 // Schema for the form values (client-side)
@@ -53,7 +53,7 @@ const purchaseFormSchema = z.object({
   query: z.string().optional().or(z.literal('')),
 });
 
-type PurchaseFormValues = z.infer<typeof purchaseFormSchema>;
+export type PurchaseFormValues = z.infer<typeof purchaseFormSchema>;
 
 interface PurchaseFormProps {
   product: Product;
@@ -65,7 +65,8 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
   const { toast } = useToast();
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null); // Ref for the first input field
+  const [confirmationMessage, setConfirmationMessage] = useState("Your order request is submitted. We will contact you within 3 hours for confirming order.");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -83,10 +84,9 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
 
   useEffect(() => {
     if (open && nameInputRef.current) {
-      // Timeout to ensure the dialog is fully rendered and focusable
       const timer = setTimeout(() => {
         nameInputRef.current?.focus();
-      }, 100); // Small delay, adjust if needed
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [open]);
@@ -100,28 +100,50 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
       timestamp: new Date().toISOString(),
     };
     
-    const result = await saveUserDataAction(dataToSave);
+    const saveResult = await saveUserDataAction(dataToSave);
     
-    setIsSubmitting(false);
+    if (saveResult.success) {
+      console.log(saveResult.message);
+      
+      // Prepare data for Telegram notification
+      const telegramOrderDetails: OrderDetailsForTelegram = {
+        ...values, // user form input
+        productName: product.name,
+        productId: product.id,
+        timestamp: dataToSave.timestamp, // use the same timestamp
+      };
 
-    if (result.success) {
-      console.log(result.message);
+      const telegramResult = await notifyOrderViaTelegram(telegramOrderDetails);
+
+      if (telegramResult.success) {
+        setConfirmationMessage("Order submitted successfully! We'll be in touch via Telegram soon.");
+      } else {
+        // If Telegram notification fails, inform the user but still confirm the order was saved.
+        setConfirmationMessage(`Order submitted, but notification failed. Details: ${telegramResult.message}. Please contact support if you don't hear from us.`);
+        toast({
+            variant: "destructive",
+            title: "Order submission issue",
+            description: `Order saved, but Telegram notification failed: ${telegramResult.message}. ${telegramResult.error ? `Error details: ${telegramResult.error}`: ''}`,
+            duration: 10000, // Longer duration for important errors
+        });
+        console.error("Telegram Notification Error:", telegramResult.message, telegramResult.error);
+      }
       setIsConfirmationDialogOpen(true);
-      // Form reset and dialog close will happen after confirmation dialog is closed
     } else {
-      console.error('Failed to save user data:', result.message, result.error, result.errors);
+      console.error('Failed to save user data:', saveResult.message, saveResult.error, saveResult.errors);
       toast({
         variant: "destructive",
         title: "Submission Error",
-        description: result.message || "Could not save your information. Please try again.",
+        description: saveResult.message || "Could not save your information. Please try again.",
       });
     }
+    setIsSubmitting(false);
   }
 
   const handleConfirmationDialogClose = () => {
     setIsConfirmationDialogOpen(false);
     form.reset();
-    onOpenChange(false); // Close the main purchase form dialog
+    onOpenChange(false);
   };
 
   return (
@@ -267,9 +289,9 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
       <AlertDialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Order Submitted!</AlertDialogTitle>
+            <AlertDialogTitle>Order Submission</AlertDialogTitle>
             <AlertDialogDescription>
-              Your order request is submitted. We will contact you within 3 hours for confirming order.
+              {confirmationMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
