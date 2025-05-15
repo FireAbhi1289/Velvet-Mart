@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { z } from 'zod';
+import { z } from 'zod'; // Added Zod import
 
 // Define a schema for the data parts we expect for the Telegram message.
 // This should align with what's passed from purchase-form.tsx
