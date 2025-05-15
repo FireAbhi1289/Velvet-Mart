@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, User, Phone, UploadCloud } from 'lucide-react'; // Removed Paperclip as it's not used with UploadCloud
+import { X, Send, User, Phone, UploadCloud } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image'; 
 
@@ -140,11 +140,11 @@ export default function WishieWidget() {
       <Card className="w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] shadow-2xl rounded-lg flex flex-col bg-card">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            {/* Replace emoji with Image component */}
+            {/* Ensure the src path starts with '/' and the image is in the public folder */}
             <Image 
               src="/wishie-avatar.png" 
               alt="Wishie Avatar" 
-              width={32}  // Adjust size as needed for the header
+              width={32} 
               height={32} 
               className="rounded-full object-cover"
             />

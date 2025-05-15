@@ -28,11 +28,11 @@ export default function WishieTriggerClient() {
       aria-label="Open Wishie"
       size="icon"
     >
-      {/* Replace Sparkles with Image component */}
+      {/* Ensure the src path starts with '/' and the image is in the public folder */}
       <Image 
         src="/wishie-avatar.png" 
         alt="Wishie Avatar" 
-        width={56} // Button is h-14 w-14 (56px), image can fill it or be slightly smaller
+        width={56} 
         height={56}
         className="rounded-full object-cover" 
       />
