@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, User, Phone, UploadCloud } from 'lucide-react';
+import { X, Send, User, Phone, UploadCloud, Loader2 } from 'lucide-react'; // Added Loader2
 import { ScrollArea } from '@/components/ui/scroll-area';
-import Image from 'next/image'; 
+import Image from 'next/image';
+import { notifyWishViaTelegram, type WishieDetailsForTelegram } from '@/app/actions/wishie-telegram-actions'; // Import new action
+import { useToast } from '@/hooks/use-toast'; // For displaying errors if Telegram fails
 
 const STEPS = {
   GREET_ITEM_DESCRIPTION: 0,
@@ -37,12 +39,14 @@ export default function WishieWidget() {
     contactNumber: '',
   });
   const [isVisible, setIsVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // For loading state
+  const [confirmationMessage, setConfirmationMessage] = useState("Your request has been submitted! Wishie will reach out to you within 3 hours!");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isWishieOpen) {
       setIsVisible(true);
-      // Reset step and form data when Wishie opens or if the selectedCategory changes while it's open
       setCurrentStep(STEPS.GREET_ITEM_DESCRIPTION);
       setFormData({
         itemDescription: '',
@@ -51,11 +55,11 @@ export default function WishieWidget() {
         fullName: '',
         contactNumber: '',
       });
+      setConfirmationMessage("Your request has been submitted! Wishie will reach out to you within 3 hours!"); // Reset confirmation message
     } else {
-      // Allows for exit animation before unmounting or hiding
-      setTimeout(() => setIsVisible(false), 300); // Match animation duration
+      setTimeout(() => setIsVisible(false), 300);
     }
-  }, [isWishieOpen, selectedCategory]); 
+  }, [isWishieOpen, selectedCategory]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -70,55 +74,81 @@ export default function WishieWidget() {
         setFormData((prev) => ({
           ...prev,
           imageFile: file,
-          imagePreview: reader.result as string, // Store as data URI
+          imagePreview: reader.result as string,
         }));
       };
       reader.readAsDataURL(file);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        imageFile: null,
+        imagePreview: null,
+      }));
     }
   };
 
   const nextStep = () => {
-    // Basic validation before proceeding
     if (currentStep === STEPS.GREET_ITEM_DESCRIPTION && !formData.itemDescription.trim()) {
-        alert("Please describe the item you're looking for.");
-        return;
+      toast({ variant: "destructive", title: "Oops!", description: "Please describe the item you're looking for." });
+      return;
     }
     if (currentStep === STEPS.USER_DETAILS) {
-        if (!formData.fullName.trim()) {
-            alert("Please enter your full name.");
-            return;
-        }
-        if (!formData.contactNumber.trim() || !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactNumber)) {
-            alert("Please enter a valid contact number.");
-            return;
-        }
+      if (!formData.fullName.trim()) {
+        toast({ variant: "destructive", title: "Oops!", description: "Please enter your full name." });
+        return;
+      }
+      if (!formData.contactNumber.trim() || !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactNumber)) {
+        toast({ variant: "destructive", title: "Oops!", description: "Please enter a valid contact number." });
+        return;
+      }
     }
     setCurrentStep((prev) => prev + 1);
   };
-  
-  const handleSubmit = (e: FormEvent) => {
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-     if (!formData.fullName.trim()) {
-        alert("Please enter your full name.");
-        return;
+    if (!formData.fullName.trim()) {
+      toast({ variant: "destructive", title: "Oops!", description: "Please enter your full name." });
+      return;
     }
     if (!formData.contactNumber.trim() || !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactNumber)) {
-        alert("Please enter a valid contact number.");
-        return;
+      toast({ variant: "destructive", title: "Oops!", description: "Please enter a valid contact number." });
+      return;
     }
-    // Here you would typically send the data to a backend or an email service
-    console.log('Wishie Request Submitted:', { 
-        category: selectedCategory, 
-        itemDescription: formData.itemDescription,
-        imageProvided: !!formData.imageFile, // or check formData.imagePreview
-        fullName: formData.fullName,
-        contactNumber: formData.contactNumber 
-    });
-    // For now, we just log. In a real app, you'd send formData.imageFile as well if needed.
-    nextStep(); // Move to confirmation
+
+    setIsSubmitting(true);
+
+    const wishDetailsForTelegram: WishieDetailsForTelegram = {
+      category: selectedCategory,
+      itemDescription: formData.itemDescription,
+      imageProvided: !!formData.imageFile,
+      fullName: formData.fullName,
+      contactNumber: formData.contactNumber,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log('Wishie Request Submitted:', wishDetailsForTelegram);
+
+    const telegramResult = await notifyWishViaTelegram(wishDetailsForTelegram);
+
+    if (telegramResult.success) {
+      setConfirmationMessage("Your request has been submitted! Wishie will reach out to you within 3 hours!");
+    } else {
+      setConfirmationMessage(`Your request was submitted, but we had trouble sending an instant notification. We'll still get back to you! Error: ${telegramResult.message}`);
+      toast({
+        variant: "destructive",
+        title: "Notification Issue",
+        description: `Wish submitted, but Telegram notification failed: ${telegramResult.message}. ${telegramResult.error ? `Details: ${telegramResult.error}` : ''}`,
+        duration: 10000,
+      });
+      console.error("Wishie Telegram Notification Error:", telegramResult.message, telegramResult.error);
+    }
+    
+    setCurrentStep(STEPS.CONFIRMATION); // Move to confirmation regardless of Telegram status for now
+    setIsSubmitting(false);
   };
 
-  if (!isVisible && !isWishieOpen) { 
+  if (!isVisible && !isWishieOpen) {
     return null;
   }
 
@@ -135,22 +165,21 @@ export default function WishieWidget() {
         `fixed bottom-4 right-4 z-50 transition-all duration-300 ease-in-out transform
         ${isWishieOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`
       }
-      style={{ willChange: 'opacity, transform' }} 
+      style={{ willChange: 'opacity, transform' }}
     >
       <Card className="w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] shadow-2xl rounded-lg flex flex-col bg-card">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            {/* Ensure the src path starts with '/' and the image is in the public folder */}
-            <Image 
-              src="/wishie-avatar.png" 
-              alt="Wishie Avatar" 
-              width={32} 
-              height={32} 
+            <Image
+              src="/wishie-avatar.png"
+              alt="Wishie Avatar"
+              width={32}
+              height={32}
               className="rounded-full object-cover"
             />
             <CardTitle className="text-lg font-semibold">Wishie</CardTitle>
           </div>
-          <Button variant="ghost" size="icon" onClick={closeWishie} aria-label="Close Wishie">
+          <Button variant="ghost" size="icon" onClick={closeWishie} aria-label="Close Wishie" disabled={isSubmitting}>
             <X className="h-5 w-5" />
           </Button>
         </CardHeader>
@@ -206,7 +235,7 @@ export default function WishieWidget() {
                 <p className="bg-secondary text-secondary-foreground p-3 rounded-md shadow-sm">
                   Just a little more info to make your wish come true!
                 </p>
-                <div className="space-y-3">
+                <form onSubmit={handleSubmit} id="wishieForm" className="space-y-3">
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -231,15 +260,15 @@ export default function WishieWidget() {
                       required
                     />
                   </div>
-                </div>
+                </form>
               </>
             )}
 
             {currentStep === STEPS.CONFIRMATION && (
               <div className="text-center space-y-3 py-8">
                 <p className="text-4xl">✅</p>
-                <p className="font-semibold text-lg text-primary">Your request has been submitted!</p>
-                <p className="text-muted-foreground">Wishie will reach out to you within 3 hours!</p>
+                <p className="font-semibold text-lg text-primary">Wish Request Submitted!</p>
+                <p className="text-muted-foreground">{confirmationMessage}</p>
               </div>
             )}
           </CardContent>
@@ -247,13 +276,14 @@ export default function WishieWidget() {
 
         <CardFooter className="p-4 border-t">
           {currentStep < STEPS.USER_DETAILS && (
-            <Button onClick={nextStep} className="w-full">
+            <Button onClick={nextStep} className="w-full" disabled={isSubmitting}>
               Next <Send className="ml-2 h-4 w-4" />
             </Button>
           )}
            {currentStep === STEPS.USER_DETAILS && (
-            <Button onClick={handleSubmit} className="w-full" type={currentStep === STEPS.USER_DETAILS ? "submit" : "button"}>
-              Submit Wish <Send className="ml-2 h-4 w-4" />
+            <Button form="wishieForm" type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isSubmitting ? "Submitting..." : "Submit Wish"}
             </Button>
           )}
           {currentStep === STEPS.CONFIRMATION && (
