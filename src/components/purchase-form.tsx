@@ -116,7 +116,7 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
       const telegramResult = await notifyOrderViaTelegram(telegramOrderDetails);
 
       if (telegramResult.success) {
-        setConfirmationMessage("Order submitted successfully! We'll be in touch via Telegram soon.");
+        setConfirmationMessage("Order submitted successfully! We'll contact you within 3 hours for confirming order.");
       } else {
         // If Telegram notification fails, inform the user but still confirm the order was saved.
         setConfirmationMessage(`Order submitted, but notification failed. Details: ${telegramResult.message}. Please contact support if you don't hear from us.`);

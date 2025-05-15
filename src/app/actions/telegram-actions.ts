@@ -24,7 +24,7 @@ export type OrderDetailsForTelegram = z.infer<typeof OrderDetailsSchema>;
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "7844488242:AAH0Cd-SzmsLtLTxkiQ_OTuhxPK8hil3kaM";
 // IMPORTANT: Replace "YOUR_ACTUAL_TELEGRAM_CHAT_ID" with your actual Telegram User ID or Group ID.
 // You can get your User ID by messaging @userinfobot on Telegram.
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || "YOUR_ACTUAL_TELEGRAM_CHAT_ID";
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || "-1002570299435";
 
 // Function to escape characters for MarkdownV2
 function escapeMarkdownV2(text: string | undefined | null): string {

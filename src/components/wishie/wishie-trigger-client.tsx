@@ -2,13 +2,13 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import Image from 'next/image'; // Import next/image
 import { useWishie } from '@/context/wishie-context';
-import { usePathname } from 'next/navigation'; // Import usePathname
+import { usePathname } from 'next/navigation'; 
 
 export default function WishieTriggerClient() {
   const { openWishie, isWishieOpen, hasCategoryInteracted } = useWishie();
-  const pathname = usePathname(); // Get the current path
+  const pathname = usePathname(); 
 
   // Condition 1: Never show on the home page
   if (pathname === '/') {
@@ -23,13 +23,19 @@ export default function WishieTriggerClient() {
 
   return (
     <Button
-      onClick={() => openWishie()} // When trigger is clicked, open Wishie (it will use the last selected category or be generic)
-      className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 ease-in-out"
+      onClick={() => openWishie()} 
+      className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 ease-in-out flex items-center justify-center p-0 overflow-hidden"
       aria-label="Open Wishie"
       size="icon"
     >
-      <Sparkles className="h-7 w-7" />
+      {/* Replace Sparkles with Image component */}
+      <Image 
+        src="/wishie-avatar.png" 
+        alt="Wishie Avatar" 
+        width={56} // Button is h-14 w-14 (56px), image can fill it or be slightly smaller
+        height={56}
+        className="rounded-full object-cover" 
+      />
     </Button>
   );
 }
-

@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, Paperclip, User, Phone, UploadCloud } from 'lucide-react';
+import { X, Send, User, Phone, UploadCloud } from 'lucide-react'; // Removed Paperclip as it's not used with UploadCloud
 import { ScrollArea } from '@/components/ui/scroll-area';
-import Image from 'next/image'; // For potential image preview
+import Image from 'next/image'; 
 
 const STEPS = {
   GREET_ITEM_DESCRIPTION: 0,
@@ -55,7 +55,7 @@ export default function WishieWidget() {
       // Allows for exit animation before unmounting or hiding
       setTimeout(() => setIsVisible(false), 300); // Match animation duration
     }
-  }, [isWishieOpen, selectedCategory]); // Added selectedCategory to dependencies
+  }, [isWishieOpen, selectedCategory]); 
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -65,11 +65,15 @@ export default function WishieWidget() {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFormData((prev) => ({
-        ...prev,
-        imageFile: file,
-        imagePreview: URL.createObjectURL(file),
-      }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          imageFile: file,
+          imagePreview: reader.result as string, // Store as data URI
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -102,7 +106,15 @@ export default function WishieWidget() {
         alert("Please enter a valid contact number.");
         return;
     }
-    console.log('Wishie Request Submitted:', { category: selectedCategory, ...formData });
+    // Here you would typically send the data to a backend or an email service
+    console.log('Wishie Request Submitted:', { 
+        category: selectedCategory, 
+        itemDescription: formData.itemDescription,
+        imageProvided: !!formData.imageFile, // or check formData.imagePreview
+        fullName: formData.fullName,
+        contactNumber: formData.contactNumber 
+    });
+    // For now, we just log. In a real app, you'd send formData.imageFile as well if needed.
     nextStep(); // Move to confirmation
   };
 
@@ -128,7 +140,14 @@ export default function WishieWidget() {
       <Card className="w-[350px] max-w-[90vw] h-[500px] max-h-[80vh] shadow-2xl rounded-lg flex flex-col bg-card">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🧞‍♀️</span>
+            {/* Replace emoji with Image component */}
+            <Image 
+              src="/wishie-avatar.png" 
+              alt="Wishie Avatar" 
+              width={32}  // Adjust size as needed for the header
+              height={32} 
+              className="rounded-full object-cover"
+            />
             <CardTitle className="text-lg font-semibold">Wishie</CardTitle>
           </div>
           <Button variant="ghost" size="icon" onClick={closeWishie} aria-label="Close Wishie">
