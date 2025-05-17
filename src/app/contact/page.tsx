@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Contact Us | Velvet Mart',
-  description: 'Get in touch with Velvet Mart. Find our email, Instagram, and phone number.',
+  description: 'Get in touch with Velvet Mart. Find our email, Instagram, and phone numbers.',
 };
 
 export default function ContactPage() {
@@ -22,8 +22,8 @@ export default function ContactPage() {
     {
       icon: Mail,
       label: 'Email',
-      value: 'velvetbloom.off@gmail.com',
-      href: 'mailto:velvetbloom.off@gmail.com',
+      value: 'velvetmart@protonmail.com',
+      href: 'mailto:velvetmart@protonmail.com',
     },
     {
       icon: Instagram,
@@ -33,9 +33,15 @@ export default function ContactPage() {
     },
     {
       icon: PhoneIcon,
-      label: 'Phone',
+      label: 'Phone 1',
       value: '+91 93036 44204',
       href: 'tel:+919303644204',
+    },
+    {
+      icon: PhoneIcon,
+      label: 'Phone 2',
+      value: '+91 78692 24018', // Added space for readability, href is correct
+      href: 'tel:+917869224018',
     },
   ];
 
@@ -62,7 +68,7 @@ export default function ContactPage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"> {/* Adjusted grid for 4 items */}
         {contactDetails.map((detail) => (
           <Card key={detail.label} className="hover:shadow-lg transition-shadow duration-300 h-full">
             <CardHeader className="flex flex-row items-center space-x-3 pb-3 pt-5">
