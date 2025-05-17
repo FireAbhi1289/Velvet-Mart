@@ -84,7 +84,7 @@ export default function ContactPage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Adjusted grid for potentially 3 items */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6"> {/* Changed md:grid-cols-2 to md:grid-cols-3 */}
         {contactDetails.map((detail) => (
           <Card key={detail.label} className="hover:shadow-lg transition-shadow duration-300 h-full">
             <CardHeader className="flex flex-row items-center space-x-3 pb-3 pt-5">
