@@ -24,24 +24,40 @@ export default function ContactPage() {
       label: 'Email',
       value: 'velvetmart@protonmail.com',
       href: 'mailto:velvetmart@protonmail.com',
+      isJsxValue: false,
     },
     {
       icon: Instagram,
       label: 'Instagram',
       value: '@velvetmart.off',
       href: 'https://instagram.com/velvetmart.off',
+      isJsxValue: false,
     },
     {
       icon: PhoneIcon,
-      label: 'Phone 1',
-      value: '+91 93036 44204',
-      href: 'tel:+919303644204',
-    },
-    {
-      icon: PhoneIcon,
-      label: 'Phone 2',
-      value: '+91 78692 24018', // Added space for readability, href is correct
-      href: 'tel:+917869224018',
+      label: 'Phone',
+      value: (
+        <>
+          <a 
+            href="tel:+919303644204" 
+            className="block text-foreground hover:text-primary hover:underline"
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            +91 93036 44204
+          </a>
+          <a 
+            href="tel:+917869224018" 
+            className="block text-foreground hover:text-primary hover:underline mt-1"
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            +91 78692 24018
+          </a>
+        </>
+      ),
+      href: '#', // Not used when isJsxValue is true
+      isJsxValue: true,
     },
   ];
 
@@ -68,7 +84,7 @@ export default function ContactPage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"> {/* Adjusted grid for 4 items */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Adjusted grid for potentially 3 items */}
         {contactDetails.map((detail) => (
           <Card key={detail.label} className="hover:shadow-lg transition-shadow duration-300 h-full">
             <CardHeader className="flex flex-row items-center space-x-3 pb-3 pt-5">
@@ -76,14 +92,20 @@ export default function ContactPage() {
               <CardTitle className="text-xl font-medium">{detail.label}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <a
-                href={detail.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-base text-foreground hover:text-primary break-words"
-              >
-                {detail.value}
-              </a>
+              {detail.isJsxValue ? (
+                <div className="text-base break-words">
+                  {detail.value}
+                </div>
+              ) : (
+                <a
+                  href={detail.href}
+                  target={detail.label === 'Email' ? '_self' : '_blank'}
+                  rel={detail.label === 'Email' ? undefined : 'noopener noreferrer'}
+                  className="text-base text-foreground hover:text-primary break-words"
+                >
+                  {detail.value as string}
+                </a>
+              )}
             </CardContent>
           </Card>
         ))}
