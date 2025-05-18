@@ -12,9 +12,9 @@ export default function Home() {
   const { updateWishieCategoryContext } = useWishie(); // Get the new function from context
 
   const categories = [
-    { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/fine-jewelry-showcase/600/400', aiHint: 'fine jewelry showcase'},
-    { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/library-book-stacks/600/400', aiHint: 'library book stacks' },
-    { name: 'Gadgets', href: '/gadgets', icon: Smartphone, image: 'https://picsum.photos/seed/latest-tech-display/600/400', aiHint: 'latest tech display' },
+    { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/sparkling-jewelry/600/400', aiHint: 'sparkling necklace'},
+    { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/antique-books/600/400', aiHint: 'open book' },
+    { name: 'Gadgets', href: '/gadgets', icon: Smartphone, image: 'https://picsum.photos/seed/futuristic-gadgets/600/400', aiHint: 'modern smartphone' },
   ];
 
   return (
