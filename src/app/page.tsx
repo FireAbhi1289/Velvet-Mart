@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gem, BookOpen, Headphones } from 'lucide-react'; // Changed Smartphone to Headphones
+import { Gem, BookOpen, Speaker } from 'lucide-react'; // Changed Headphones to Speaker
 import Image from 'next/image';
 import SearchBar from '@/components/search-bar';
 import { useWishie } from '@/context/wishie-context'; // Import the hook
@@ -14,7 +14,7 @@ export default function Home() {
   const categories = [
     { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/sparkling-jewelry/600/400', aiHint: 'sparkling necklace'},
     { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/open-book/600/400', aiHint: 'open book' },
-    { name: 'Gadgets', href: '/gadgets', icon: Headphones, image: 'https://picsum.photos/seed/small-gadgets/600/400', aiHint: 'small gadgets' }, // Updated icon and aiHint
+    { name: 'Gadgets', href: '/gadgets', icon: Speaker, image: 'https://picsum.photos/seed/audio-gadgets/600/400', aiHint: 'compact speaker' }, // Updated icon and aiHint
   ];
 
   return (
