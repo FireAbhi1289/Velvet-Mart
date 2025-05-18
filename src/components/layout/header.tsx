@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gem, BookOpen, Speaker, Menu, X, Mail as MailIcon } from 'lucide-react'; // Changed Smartphone to Speaker
+import { Gem, BookOpen, Layers, Menu, X, Mail as MailIcon } from 'lucide-react'; // Changed Speaker to Layers
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
@@ -15,7 +15,7 @@ export default function Header() {
   const navLinks = [
     { href: '/jewelry', label: 'Jewelry', icon: Gem },
     { href: '/books', label: 'Books', icon: BookOpen },
-    { href: '/gadgets', label: 'Gadgets', icon: Speaker }, // Updated icon
+    { href: '/gadgets', label: 'Gadgets', icon: Layers }, // Updated icon
     { href: '/contact', label: 'Contact Us', icon: MailIcon },
   ];
 
