@@ -1,3 +1,4 @@
+
 'use client'; // Required because we're using a hook (useWishie)
 
 import Link from 'next/link';
@@ -11,9 +12,9 @@ export default function Home() {
   const { updateWishieCategoryContext } = useWishie(); // Get the new function from context
 
   const categories = [
-    { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/cat-jewelry/600/400', aiHint: 'elegant jewelry display'},
-    { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/cat-books/600/400', aiHint: 'cozy bookstore shelf' },
-    { name: 'Gadgets', href: '/gadgets', icon: Smartphone, image: 'https://picsum.photos/seed/cat-gadgets/600/400', aiHint: 'modern gadgets collection' },
+    { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/fine-jewelry-showcase/600/400', aiHint: 'fine jewelry showcase'},
+    { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/library-book-stacks/600/400', aiHint: 'library book stacks' },
+    { name: 'Gadgets', href: '/gadgets', icon: Smartphone, image: 'https://picsum.photos/seed/latest-tech-display/600/400', aiHint: 'latest tech display' },
   ];
 
   return (
