@@ -37,7 +37,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { saveUserDataAction, type UserData as FormInputData } from '@/app/actions/saveUserData';
+// Removed import for saveUserDataAction
 import { notifyOrderViaTelegram, type OrderDetailsForTelegram } from '@/app/actions/telegram-actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -93,49 +93,29 @@ export default function PurchaseForm({ product, open, onOpenChange }: PurchaseFo
 
   async function onSubmit(values: PurchaseFormValues) {
     setIsSubmitting(true);
-    const dataToSave: FormInputData = {
-      ...values,
+    
+    // Prepare data for Telegram notification
+    const telegramOrderDetails: OrderDetailsForTelegram = {
+      ...values, // user form input
       productName: product.name,
       productId: product.id,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString(), // generate timestamp
     };
-    
-    const saveResult = await saveUserDataAction(dataToSave);
-    
-    if (saveResult.success) {
-      console.log(saveResult.message);
-      
-      // Prepare data for Telegram notification
-      const telegramOrderDetails: OrderDetailsForTelegram = {
-        ...values, // user form input
-        productName: product.name,
-        productId: product.id,
-        timestamp: dataToSave.timestamp, // use the same timestamp
-      };
 
-      const telegramResult = await notifyOrderViaTelegram(telegramOrderDetails);
+    const telegramResult = await notifyOrderViaTelegram(telegramOrderDetails);
 
-      if (telegramResult.success) {
-        setConfirmationMessage("Order submitted successfully! We'll contact you within 3 hours for confirming order.");
-      } else {
-        // If Telegram notification fails, inform the user but still confirm the order was saved.
-        setConfirmationMessage(`Order submitted, but notification failed. Details: ${telegramResult.message}. Please contact support if you don't hear from us.`);
-        toast({
-            variant: "destructive",
-            title: "Order submission issue",
-            description: `Order saved, but Telegram notification failed: ${telegramResult.message}. ${telegramResult.error ? `Error details: ${telegramResult.error}`: ''}`,
-            duration: 10000, // Longer duration for important errors
-        });
-        console.error("Telegram Notification Error:", telegramResult.message, telegramResult.error);
-      }
-      setIsConfirmationDialogOpen(true);
+    if (telegramResult.success) {
+      setConfirmationMessage("Order submitted successfully! We'll contact you within 3 hours for confirming order.");
+      setIsConfirmationDialogOpen(true); // Show confirmation dialog only on success
     } else {
-      console.error('Failed to save user data:', saveResult.message, saveResult.error, saveResult.errors);
+      // If Telegram notification fails, show an error toast and do not show the confirmation dialog.
       toast({
-        variant: "destructive",
-        title: "Submission Error",
-        description: saveResult.message || "Could not save your information. Please try again.",
+          variant: "destructive",
+          title: "Order Submission Error",
+          description: telegramResult.message || "Could not send your order. Please try again or contact support.",
+          duration: 7000, 
       });
+      console.error("Telegram Notification Error:", telegramResult.message, telegramResult.error);
     }
     setIsSubmitting(false);
   }

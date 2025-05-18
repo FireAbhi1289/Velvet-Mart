@@ -1,4 +1,9 @@
 
+// This file is no longer used by the purchase form.
+// It can be safely deleted or kept if used by other parts of the application.
+// For now, I will leave its content as is but it's effectively deprecated
+// for the purchase form functionality.
+
 'use server';
 
 import fs from 'fs/promises';
