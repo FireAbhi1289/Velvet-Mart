@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gem, BookOpen, Layers, Headphones } from 'lucide-react'; // Using Layers for Gadgets
+import { Gem, BookOpen, Layers } from 'lucide-react'; 
 import Image from 'next/image';
 import SearchBar from '@/components/search-bar';
 import { useWishie } from '@/context/wishie-context'; // Import the hook
@@ -29,9 +29,9 @@ export default function Home() {
     { 
       name: 'Gadgets', 
       href: '/gadgets', 
-      icon: Layers, // Changed from Headphones to Layers (representing hologram)
+      icon: Layers, 
       image: 'https://drive.google.com/uc?export=view&id=1e483X9RnVao1AAdBvwaZG5MphrDhC9Aa', 
-      aiHint: 'holographic interface' // Updated hint
+      aiHint: 'holographic interface'
     },
   ];
 
@@ -56,12 +56,12 @@ export default function Home() {
                 >
                   <Link href={category.href} legacyBehavior passHref>
                     <a className="flex flex-col h-full"> {/* Anchor tag wraps content for Link */}
-                      <CardHeader className="relative p-0 h-48 md:h-60">
+                      <CardHeader className="relative p-0 aspect-square"> {/* Changed to aspect-square */}
                         <Image
                             src={category.image}
                             alt={category.name}
                             layout="fill"
-                            objectFit="contain" // Changed from "cover" to "contain"
+                            objectFit="contain" 
                             className="transition-opacity duration-300 group-hover:opacity-90"
                             data-ai-hint={category.aiHint}
                           />
@@ -80,3 +80,4 @@ export default function Home() {
     </div>
   );
 }
+
