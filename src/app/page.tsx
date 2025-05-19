@@ -12,9 +12,27 @@ export default function Home() {
   const { updateWishieCategoryContext } = useWishie(); // Get the new function from context
 
   const categories = [
-    { name: 'Jewelry', href: '/jewelry', icon: Gem, image: 'https://picsum.photos/seed/sparkling-jewelry/600/400', aiHint: 'sparkling necklace'},
-    { name: 'Books', href: '/books', icon: BookOpen, image: 'https://picsum.photos/seed/open-book/600/400', aiHint: 'open book' },
-    { name: 'Gadgets', href: '/gadgets', icon: Layers, image: 'https://picsum.photos/seed/holographic-gadgets/600/400', aiHint: 'holographic interface' }, // Updated icon and aiHint
+    { 
+      name: 'Jewelry', 
+      href: '/jewelry', 
+      icon: Gem, 
+      image: 'https://drive.google.com/uc?export=view&id=YOUR_JEWELRY_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
+      aiHint: 'jewelry collection' // Updated AI hint
+    },
+    { 
+      name: 'Books', 
+      href: '/books', 
+      icon: BookOpen, 
+      image: 'https://drive.google.com/uc?export=view&id=YOUR_BOOKS_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
+      aiHint: 'assorted books' // Updated AI hint
+    },
+    { 
+      name: 'Gadgets', 
+      href: '/gadgets', 
+      icon: Layers, 
+      image: 'https://drive.google.com/uc?export=view&id=YOUR_GADGETS_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
+      aiHint: 'modern gadgets' // Updated AI hint
+    },
   ];
 
   return (
@@ -41,7 +59,7 @@ export default function Home() {
                 >
                   <Link href={category.href} legacyBehavior passHref>
                     <a className="flex flex-col h-full"> {/* Anchor tag wraps content for Link */}
-                      <CardHeader className="relative p-0 h-48">
+                      <CardHeader className="relative p-0 h-48 md:h-60"> {/* Adjusted height for better visuals */}
                         <Image
                             src={category.image}
                             alt={category.name}
