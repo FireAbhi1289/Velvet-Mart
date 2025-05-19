@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gem, BookOpen, Layers } from 'lucide-react'; // Changed Speaker to Layers
+import { Gem, BookOpen, Layers, Headphones } from 'lucide-react'; // Using Layers for Gadgets
 import Image from 'next/image';
 import SearchBar from '@/components/search-bar';
 import { useWishie } from '@/context/wishie-context'; // Import the hook
@@ -16,8 +16,6 @@ export default function Home() {
       name: 'Jewelry', 
       href: '/jewelry', 
       icon: Gem, 
-      // Corrected Google Drive URL format. Ensure '1e3UpoIEwrlFS3S-KoRnISvdJOgmkMFnv' is your actual File ID
-      // and the file is shared as "Anyone with the link can view".
       image: 'https://drive.google.com/uc?export=view&id=1e3UpoIEwrlFS3S-KoRnISvdJOgmkMFnv', 
       aiHint: 'jewelry collection'
     },
@@ -25,19 +23,15 @@ export default function Home() {
       name: 'Books', 
       href: '/books', 
       icon: BookOpen, 
-      // Corrected Google Drive URL format. Ensure '1e1Fc62RKZteRnqJu-kIMS8Ss-LHgknjx' is your actual File ID
-      // and the file is shared as "Anyone with the link can view".
       image: 'https://drive.google.com/uc?export=view&id=1e1Fc62RKZteRnqJu-kIMS8Ss-LHgknjx', 
       aiHint: 'assorted books'
     },
     { 
       name: 'Gadgets', 
       href: '/gadgets', 
-      icon: Layers, 
-      // Corrected Google Drive URL format. Ensure '1e483X9RnVao1AAdBvwaZG5MphrDhC9Aa' is your actual File ID
-      // and the file is shared as "Anyone with the link can view".
+      icon: Layers, // Changed from Headphones to Layers (representing hologram)
       image: 'https://drive.google.com/uc?export=view&id=1e483X9RnVao1AAdBvwaZG5MphrDhC9Aa', 
-      aiHint: 'modern gadgets'
+      aiHint: 'holographic interface' // Updated hint
     },
   ];
 
@@ -67,7 +61,7 @@ export default function Home() {
                             src={category.image}
                             alt={category.name}
                             layout="fill"
-                            objectFit="cover"
+                            objectFit="contain" // Changed from "cover" to "contain"
                             className="transition-opacity duration-300 group-hover:opacity-90"
                             data-ai-hint={category.aiHint}
                           />
