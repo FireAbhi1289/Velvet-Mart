@@ -16,22 +16,28 @@ export default function Home() {
       name: 'Jewelry', 
       href: '/jewelry', 
       icon: Gem, 
-      image: 'https://drive.google.com/uc?export=view&id=YOUR_JEWELRY_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
-      aiHint: 'jewelry collection' // Updated AI hint
+      // Corrected Google Drive URL format. Ensure '1e3UpoIEwrlFS3S-KoRnISvdJOgmkMFnv' is your actual File ID
+      // and the file is shared as "Anyone with the link can view".
+      image: 'https://drive.google.com/uc?export=view&id=1e3UpoIEwrlFS3S-KoRnISvdJOgmkMFnv', 
+      aiHint: 'jewelry collection'
     },
     { 
       name: 'Books', 
       href: '/books', 
       icon: BookOpen, 
-      image: 'https://drive.google.com/uc?export=view&id=YOUR_BOOKS_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
-      aiHint: 'assorted books' // Updated AI hint
+      // Corrected Google Drive URL format. Ensure '1e1Fc62RKZteRnqJu-kIMS8Ss-LHgknjx' is your actual File ID
+      // and the file is shared as "Anyone with the link can view".
+      image: 'https://drive.google.com/uc?export=view&id=1e1Fc62RKZteRnqJu-kIMS8Ss-LHgknjx', 
+      aiHint: 'assorted books'
     },
     { 
       name: 'Gadgets', 
       href: '/gadgets', 
       icon: Layers, 
-      image: 'https://drive.google.com/uc?export=view&id=YOUR_GADGETS_IMAGE_FILE_ID_HERE', // Replace with your actual Google Drive File ID
-      aiHint: 'modern gadgets' // Updated AI hint
+      // Corrected Google Drive URL format. Ensure '1e483X9RnVao1AAdBvwaZG5MphrDhC9Aa' is your actual File ID
+      // and the file is shared as "Anyone with the link can view".
+      image: 'https://drive.google.com/uc?export=view&id=1e483X9RnVao1AAdBvwaZG5MphrDhC9Aa', 
+      aiHint: 'modern gadgets'
     },
   ];
 
@@ -52,14 +58,11 @@ export default function Home() {
              <div key={category.name} className="block group transform transition-transform duration-300 hover:scale-105">
                 <Card
                   className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                  // Call updateWishieCategoryContext instead of openWishie
-                  // The Link component below will handle navigation.
-                  // This sets the context for Wishie without opening it.
                   onClick={() => updateWishieCategoryContext(category.name)}
                 >
                   <Link href={category.href} legacyBehavior passHref>
                     <a className="flex flex-col h-full"> {/* Anchor tag wraps content for Link */}
-                      <CardHeader className="relative p-0 h-48 md:h-60"> {/* Adjusted height for better visuals */}
+                      <CardHeader className="relative p-0 h-48 md:h-60">
                         <Image
                             src={category.image}
                             alt={category.name}
