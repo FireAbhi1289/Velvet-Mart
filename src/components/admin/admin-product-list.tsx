@@ -119,10 +119,10 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                <p className="text-lg font-semibold text-primary">${product.price.toFixed(2)}</p>
+                <p className="text-lg font-semibold text-primary">₹{product.price.toFixed(2)}</p>
                 {product.originalPrice && product.originalPrice > product.price && (
                     <p className="text-sm text-muted-foreground line-through">
-                        ${product.originalPrice.toFixed(2)}
+                        ₹{product.originalPrice.toFixed(2)}
                     </p>
                 )}
                 <p className="text-sm text-muted-foreground line-clamp-3">{product.description}</p>

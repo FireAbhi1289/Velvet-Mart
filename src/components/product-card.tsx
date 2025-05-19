@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/data';
@@ -27,10 +28,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <CardTitle className="text-lg font-medium mb-1 line-clamp-2 hover:text-primary transition-colors">{product.name}</CardTitle>
           <p className="text-sm text-muted-foreground mb-2 capitalize">{product.category}</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-base font-semibold text-primary">${product.price.toFixed(2)}</p>
+            <p className="text-base font-semibold text-primary">₹{product.price.toFixed(2)}</p>
             {product.originalPrice && product.originalPrice > product.price && (
               <p className="text-sm text-muted-foreground line-through">
-                ${product.originalPrice.toFixed(2)}
+                ₹{product.originalPrice.toFixed(2)}
               </p>
             )}
           </div>

@@ -228,9 +228,9 @@ export default function AddProductPage() {
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Price ($)</FormLabel>
+                  <FormLabel>Price (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="e.g., 49.99" {...field} />
+                    <Input type="number" step="0.01" placeholder="e.g., 4999.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -241,9 +241,9 @@ export default function AddProductPage() {
               name="originalPrice"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Original Price ($) (Optional)</FormLabel>
+                  <FormLabel>Original Price (₹) (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="e.g., 59.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                    <Input type="number" step="0.01" placeholder="e.g., 5999.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                   </FormControl>
                   <FormDescription>Leave empty or 0 if not applicable.</FormDescription>
                   <FormMessage />
