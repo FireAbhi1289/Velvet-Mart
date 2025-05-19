@@ -56,12 +56,12 @@ export default function Home() {
                 >
                   <Link href={category.href} legacyBehavior passHref>
                     <a className="flex flex-col h-full"> {/* Anchor tag wraps content for Link */}
-                      <CardHeader className="relative p-0 aspect-square"> {/* Changed to aspect-square */}
+                      <CardHeader className="relative p-0 aspect-square"> {/* Keep aspect-square for container */}
                         <Image
                             src={category.image}
                             alt={category.name}
                             layout="fill"
-                            objectFit="contain" 
+                            objectFit="cover" 
                             className="transition-opacity duration-300 group-hover:opacity-90"
                             data-ai-hint={category.aiHint}
                           />
@@ -80,4 +80,3 @@ export default function Home() {
     </div>
   );
 }
-
