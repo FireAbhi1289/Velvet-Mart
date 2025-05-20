@@ -1,7 +1,5 @@
 
-import fs from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { v4 as uuidv4 } from 'uuid';
 
 export type Product = {
   id: string;
@@ -10,63 +8,139 @@ export type Product = {
   price: number;
   originalPrice?: number;
   description: string;
-  imageUrl: string; // Data URI
-  additionalImageUrls?: string[]; // Array of Data URIs
-  videoUrl?: string; // Data URI
+  imageUrl: string; // Data URI or URL
+  additionalImageUrls?: string[]; // Array of Data URIs or URLs
+  videoUrl?: string; // Data URI or URL
   aiHint: string;
   buyUrl?: string;
 };
 
-// Path to the JSON file
-const productsFilePath = path.join(process.cwd(), 'src', 'products.json');
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER;
+const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
+const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'products.json';
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
-// Helper function to read products from JSON file
-async function readProductsFromFile(): Promise<Product[]> {
+const API_BASE_URL = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${GITHUB_FILE_PATH}`;
+
+interface GitHubFileResponse {
+  content?: string; // Base64 encoded content
+  sha?: string;
+  message?: string; // For errors
+}
+
+// Helper to fetch products.json and its SHA from GitHub
+async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: string | null }> {
+  if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+    console.error("GitHub environment variables not configured!");
+    throw new Error("GitHub repository details not configured on the server.");
+  }
+
   try {
-    const jsonData = await fs.readFile(productsFilePath, 'utf-8');
-    try {
-      return JSON.parse(jsonData) as Product[];
-    } catch (parseError) {
-      console.error('Error parsing products.json:', parseError);
-      // If parsing fails, return an empty array to prevent site crash
-      // Optionally, you could try to recover or use a default set of products
-      return []; 
+    const response = await fetch(`${API_BASE_URL}?ref=${GITHUB_BRANCH}`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+      cache: 'no-store', // Ensure fresh data
+    });
+
+    if (response.status === 404) {
+      // File doesn't exist, return empty products and null SHA
+      console.warn(`products.json not found in GitHub repository (${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/${GITHUB_FILE_PATH} on branch ${GITHUB_BRANCH}). Assuming empty product list.`);
+      return { products: [], sha: null };
     }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response' }));
+      console.error(`Error fetching products from GitHub: ${response.status} ${response.statusText}`, errorData);
+      throw new Error(`Failed to fetch products from GitHub: ${errorData.message || response.statusText}`);
+    }
+
+    const data: GitHubFileResponse = await response.json();
+    if (!data.content) {
+      // This case might happen if the file is empty but exists.
+      console.warn('products.json exists in GitHub but is empty or content is missing.');
+      return { products: [], sha: data.sha || null };
+    }
+
+    const decodedContent = Buffer.from(data.content, 'base64').toString('utf-8');
+    const products = JSON.parse(decodedContent) as Product[];
+    if (!Array.isArray(products)) {
+      console.error('Content of products.json from GitHub is not an array. Initializing as empty. Please ensure it contains a valid JSON array.');
+      return { products: [], sha: data.sha || null };
+    }
+    return { products, sha: data.sha || null };
+
   } catch (error) {
-    const nodeError = error as NodeJS.ErrnoException;
-    console.error('Error reading products.json:', nodeError.message);
-    if (nodeError.code === 'ENOENT') {
-      // If file doesn't exist, create it with an empty array
-      await writeProductsToFile([]); 
-      return []; // Return an empty array
-    }
-    // For other read errors, return empty array to prevent crash
-    return []; 
+    console.error('Error in fetchProductsFromGitHub:', error);
+    // Fallback to empty list on other errors to prevent site crash, but log issue.
+    // Consider if re-throwing is better for certain error types.
+    return { products: [], sha: null };
   }
 }
 
-// Helper function to write products to JSON file
-async function writeProductsToFile(products: Product[]): Promise<void> {
+// Helper to write products.json back to GitHub
+async function writeProductsToGitHub(products: Product[], sha: string | null, commitMessage: string): Promise<boolean> {
+   if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+    console.error("GitHub environment variables not configured!");
+    throw new Error("GitHub repository details not configured on the server for writing.");
+  }
   try {
-    const jsonData = JSON.stringify(products, null, 2); 
-    await fs.writeFile(productsFilePath, jsonData, 'utf-8');
+    const contentBase64 = Buffer.from(JSON.stringify(products, null, 2)).toString('base64');
+    
+    const body: {
+      message: string;
+      content: string;
+      branch: string;
+      sha?: string;
+    } = {
+      message: commitMessage,
+      content: contentBase64,
+      branch: GITHUB_BRANCH,
+    };
+
+    if (sha) { // SHA is required for updating an existing file
+      body.sha = sha;
+    }
+    // If sha is null, GitHub API creates the file if it doesn't exist.
+
+    const response = await fetch(API_BASE_URL, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response during write' }));
+      console.error(`Error writing products to GitHub: ${response.status} ${response.statusText}`, errorData);
+      throw new Error(`Failed to write products to GitHub: ${errorData.message || response.statusText}`);
+    }
+    // Optionally, verify the response from GitHub to confirm the new SHA, etc.
+    // For simplicity, we assume 200/201 means success.
+    return true;
   } catch (error) {
-    console.error('Error writing to products.json:', error);
-    // Don't rethrow here as it might happen during a read operation's recovery attempt
+    console.error('Error in writeProductsToGitHub:', error);
+    return false;
   }
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  return await readProductsFromFile();
+  const { products } = await fetchProductsFromGitHub();
+  return products;
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
-  const products = await readProductsFromFile();
+  const { products } = await fetchProductsFromGitHub();
   return products.find(product => product.id === id);
 }
 
 export async function getProductsByCategory(category: Product['category']): Promise<Product[]> {
-  const products = await readProductsFromFile();
+  const { products } = await fetchProductsFromGitHub();
   return products.filter(product => product.category === category);
 }
 
@@ -74,7 +148,7 @@ export async function getProductsBySearchTerm(term: string): Promise<Product[]> 
   if (!term) {
     return [];
   }
-  const products = await readProductsFromFile();
+  const { products } = await fetchProductsFromGitHub();
   const lowerCaseTerm = term.toLowerCase();
   return products.filter(product =>
     product.name.toLowerCase().includes(lowerCaseTerm) ||
@@ -85,64 +159,63 @@ export async function getProductsBySearchTerm(term: string): Promise<Product[]> 
 
 export type AddProductData = Omit<Product, 'id'>;
 
-export async function addProduct(productData: AddProductData): Promise<Product> {
-  const products = await readProductsFromFile();
+export async function addProduct(productData: AddProductData): Promise<Product | null> {
+  const { products, sha } = await fetchProductsFromGitHub();
   const newProduct: Product = {
     ...productData,
     id: uuidv4(),
     buyUrl: productData.buyUrl === '' ? undefined : productData.buyUrl,
   };
-  products.push(newProduct);
-  await writeProductsToFile(products);
-  return newProduct;
+  const updatedProducts = [...products, newProduct];
+  const success = await writeProductsToGitHub(updatedProducts, sha, `feat: Add product ${newProduct.name}`);
+  return success ? newProduct : null;
 }
 
 export type UpdateProductData = Partial<Omit<Product, 'id'>>;
 
 export async function updateProduct(productId: string, productData: UpdateProductData): Promise<Product | null> {
-  const products = await readProductsFromFile();
+  const { products, sha } = await fetchProductsFromGitHub();
   const productIndex = products.findIndex(p => p.id === productId);
 
   if (productIndex === -1) {
+    console.warn(`Product with ID ${productId} not found for update.`);
     return null; // Product not found
   }
 
-  // Create a new object for the updated product data to avoid mutating the input
   const safeProductData: UpdateProductData = { ...productData };
-
-  // Ensure buyUrl is set to undefined if it's an empty string, otherwise use its value.
   if (typeof safeProductData.buyUrl === 'string' && safeProductData.buyUrl.trim() === '') {
     safeProductData.buyUrl = undefined;
   }
 
-
   const updatedProduct: Product = {
     ...products[productIndex],
-    ...safeProductData, // Use the safe copy
+    ...safeProductData,
   };
-  products[productIndex] = updatedProduct;
-  await writeProductsToFile(products);
-  return updatedProduct;
+  const updatedProducts = [...products];
+  updatedProducts[productIndex] = updatedProduct;
+
+  const success = await writeProductsToGitHub(updatedProducts, sha, `fix: Update product ${updatedProduct.name}`);
+  return success ? updatedProduct : null;
 }
 
 export async function deleteProduct(productId: string): Promise<Product | null> {
-  let products = await readProductsFromFile();
+  const { products, sha } = await fetchProductsFromGitHub();
   const productToDelete = products.find(p => p.id === productId);
   
   if (!productToDelete) {
+    console.warn(`Product with ID ${productId} not found for deletion.`);
     return null; // Product not found
   }
 
-  products = products.filter(p => p.id !== productId);
-  await writeProductsToFile(products);
-  return productToDelete; // Return the deleted product
+  const updatedProducts = products.filter(p => p.id !== productId);
+  const success = await writeProductsToGitHub(updatedProducts, sha, `feat: Delete product ${productToDelete.name}`);
+  return success ? productToDelete : null;
 }
 
 
-// This list is used by generateStaticParams. 
-// It's kept separate to avoid reading the file during build time for this specific purpose if not needed,
-// though currently, pages will call readProductsFromFile anyway.
-// For a truly static site with many products, this might come from a build script.
+// This list might be outdated if data is purely dynamic.
+// Consider how generateStaticParams should work if data comes from GitHub.
+// For now, it's left as is but might not be fully utilized if pages fetch fresh data.
 export const productsForStaticGeneration: Product[] = [
     {
     id: 'jwl1',
@@ -156,38 +229,10 @@ export const productsForStaticGeneration: Product[] = [
       'https://picsum.photos/seed/jwl1-alt1/600/600',
       'https://picsum.photos/seed/jwl1-alt2/600/600',
     ],
-    videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', // Placeholder for actual video URL
+    videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', 
     aiHint: 'silver necklace elegant pendant',
     buyUrl: '#',
   },
-  {
-    id: 'bk1',
-    name: 'The Midnight Library',
-    category: 'books',
-    price: 15.99,
-    originalPrice: 20.00,
-    description: 'A novel about regrets, hope, and the choices we make, exploring infinite possibilities.',
-    imageUrl: 'https://picsum.photos/seed/bk1-main/600/600',
-    additionalImageUrls: [
-      'https://picsum.photos/seed/bk1-alt1/600/600', 
-    ],
-    aiHint: 'book cover fantasy novel',
-    buyUrl: '#',
-  },
-  {
-    id: 'gdg1',
-    name: 'Wireless Earbuds',
-    "category": 'gadgets',
-    "price": 89.99,
-    "originalPrice": 110.00,
-    "description": 'High-quality wireless earbuds with noise cancellation and long battery life.',
-    "imageUrl": 'https://picsum.photos/seed/gdg1-main/600/600',
-    "additionalImageUrls": [
-      'https://picsum.photos/seed/gdg1-alt1/600/600',
-      'https://picsum.photos/seed/gdg1-alt2/600/600',
-    ],
-    "videoUrl": 'https://www.youtube.com/embed/placeholder_video_id_gadget1', // Placeholder
-    "aiHint": 'wireless earbuds modern sleek',
-    "buyUrl": '#',
-  },
+  // ... other example products if needed for static generation fallback ...
 ];
+    

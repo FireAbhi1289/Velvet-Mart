@@ -10,7 +10,7 @@ const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters."),
   category: z.enum(['jewelry', 'books', 'gadgets'], { required_error: "Please select a category." }),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
-  originalPrice: z.coerce.number().optional().transform(val => val === 0 ? undefined : val),
+  originalPrice: z.coerce.number().optional().transform(val => val === 0 || val === undefined || val === null ? undefined : val),
   description: z.string().min(10, "Description must be at least 10 characters."),
   imageUrl: z.string().min(1, "Main image data is missing").startsWith("data:image/", { message: "Invalid main image data. Must be a data URI." }),
   additionalImageUrls: z.array(
@@ -18,14 +18,17 @@ const productSchema = z.object({
   ).optional(),
   videoUrl: z.string().startsWith("data:video/", { message: "Invalid video data. Must be a data URI." }).optional().or(z.literal('')),
   aiHint: z.string().min(3, "AI Hint must be at least 3 characters."),
-  buyUrl: z.string().url({ message: "Please enter a valid URL if provided." }).optional().or(z.literal('')),
+  buyUrl: z.preprocess(
+    (val) => (val === "" ? undefined : val), 
+    z.string().url({ message: "Please enter a valid URL if provided." }).optional()
+  ),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductActionResult {
   success: boolean;
-  product?: Product;
+  product?: Product | null; // Can be null if add/update fails at data source
   error?: string;
   errors?: z.ZodIssue[];
 }
@@ -50,9 +53,13 @@ export async function addProductAction(data: ProductFormValues): Promise<Product
     };
 
     const newProduct = await addProduct(productDataToSave);
-    revalidatePath('/admin-panel'); // Revalidate admin page to show new product
-    revalidatePath(`/${newProduct.category}`); // Revalidate category page
-    revalidatePath('/'); // Revalidate home page if it lists products
+    if (!newProduct) {
+      // This indicates an issue with saving to the data source (e.g., GitHub API)
+      return { success: false, error: "Failed to add product. Data source did not confirm save." };
+    }
+    revalidatePath('/admin-panel'); 
+    revalidatePath(`/${newProduct.category}`); 
+    revalidatePath('/'); 
     return { success: true, product: newProduct };
   } catch (e) {
     console.error("Failed to add product:", e);
@@ -82,7 +89,7 @@ export async function updateProductAction(productId: string, data: ProductFormVa
     
     const updatedProduct = await updateProduct(productId, productDataToSave);
     if (!updatedProduct) {
-      return { success: false, error: "Product not found or failed to update." };
+      return { success: false, error: "Product not found or failed to update. Data source did not confirm save." };
     }
     revalidatePath('/admin-panel');
     revalidatePath(`/product/${productId}`);
@@ -105,12 +112,10 @@ export async function deleteProductAction(productId: string): Promise<DeleteProd
   try {
     const product = await deleteProduct(productId);
     if (!product) {
-        return { success: false, error: "Product not found or failed to delete." };
+        return { success: false, error: "Product not found or failed to delete. Data source did not confirm delete." };
     }
     revalidatePath('/admin-panel');
-    // Potentially revalidate category and product pages if they could still be accessed
-    // For simplicity, we are just revalidating admin. Consider more specific revalidation.
-    revalidatePath('/'); // Revalidate all relevant paths
+    revalidatePath('/'); 
     return { success: true };
   } catch (e) {
     console.error("Failed to delete product:", e);
@@ -118,3 +123,4 @@ export async function deleteProductAction(productId: string): Promise<DeleteProd
     return { success: false, error: `Failed to delete product: ${errorMessage}` };
   }
 }
+    
