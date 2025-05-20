@@ -24,26 +24,29 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addProductAction } from '../actions'; // Server action from parent directory
+import { addProductAction } from '../actions';
+import { uploadImageToImgBB } from '@/app/actions/imageUploadActions';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, type ChangeEvent } from 'react';
 import Image from 'next/image';
-import { UploadCloud, Video, XCircle } from 'lucide-react';
+import { UploadCloud, Video, XCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Updated schema for file uploads
-// buyUrl is now optional
+// Client-side schema updated for image URLs
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters." }),
   category: z.enum(['jewelry', 'books', 'gadgets'], { required_error: "Please select a category." }),
   price: z.coerce.number().min(0.01, { message: "Price must be a positive number." }),
   originalPrice: z.coerce.number().optional().transform(val => val === 0 ? undefined : val),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  imageUrl: z.string({ required_error: "Please upload a main image." }).min(1, { message: "Please upload a main image." }), // Data URI
-  additionalImageUrls: z.array(z.string().min(1, "Each additional image requires data.")).optional(), // Array of Data URIs
-  videoUrl: z.string().optional().or(z.literal('')), // Data URI or empty
+  imageUrl: z.string().url({ message: "Please upload a main image and ensure it's a valid URL." }).min(1, { message: "Main image URL is required." }),
+  additionalImageUrls: z.array(z.string().url({ message: "Each additional image must be a valid URL." })).optional(),
+  videoUrl: z.string().startsWith("data:video/", { message: "Invalid video data. Must be a data URI." }).optional().or(z.literal('')),
   aiHint: z.string().min(3, {message: "AI Hint must be at least 3 characters."}),
-  buyUrl: z.string().url({ message: "Please enter a valid URL if provided." }).optional().or(z.literal('')),
+  buyUrl: z.preprocess(
+    (val) => (val === "" || val === null ? undefined : val), 
+    z.string().url({ message: "Please enter a valid URL if provided." }).optional()
+  ),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -52,7 +55,9 @@ export default function AddProductPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
+  const [isMainImageUploading, setIsMainImageUploading] = useState(false);
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [areAdditionalImagesUploading, setAreAdditionalImagesUploading] = useState(false);
   const [videoFilePreviewName, setVideoFilePreviewName] = useState<string | null>(null);
 
   const form = useForm<ProductFormValues>({
@@ -66,33 +71,52 @@ export default function AddProductPage() {
       additionalImageUrls: [],
       videoUrl: '',
       aiHint: '',
-      buyUrl: '', // Changed default to empty string
+      buyUrl: '',
     },
   });
 
   useEffect(() => {
-    // Cleanup object URLs to prevent memory leaks
     return () => {
-      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
-      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
-      // No object URL for video name preview
+      if (mainImagePreview?.startsWith('blob:')) URL.revokeObjectURL(mainImagePreview);
+      additionalImagePreviews.forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+      });
     };
   }, [mainImagePreview, additionalImagePreviews]);
 
-  const handleMainImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
-      const previewUrl = URL.createObjectURL(file);
-      setMainImagePreview(previewUrl);
+      if (mainImagePreview?.startsWith('blob:')) URL.revokeObjectURL(mainImagePreview);
+      const localPreviewUrl = URL.createObjectURL(file);
+      setMainImagePreview(localPreviewUrl);
+      setIsMainImageUploading(true);
+      form.setValue('imageUrl', ''); // Clear previous URL
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        form.setValue('imageUrl', reader.result as string, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const result = await uploadImageToImgBB(formData);
+        if (result.success && result.url) {
+          form.setValue('imageUrl', result.url, { shouldValidate: true });
+          // Optionally update preview to ImgBB URL if desired, or keep local
+          // setMainImagePreview(result.url); // This would re-fetch from ImgBB
+          toast({ title: "Main image uploaded!", description: "Image successfully uploaded to ImgBB." });
+        } else {
+          throw new Error(result.error || "Failed to upload main image to ImgBB.");
+        }
+      } catch (error: any) {
+        console.error("Main image upload error:", error);
+        toast({ variant: "destructive", title: "Upload Error", description: error.message || "Could not upload main image." });
+        if (mainImagePreview?.startsWith('blob:')) URL.revokeObjectURL(mainImagePreview); // Clean up local preview on error
+        setMainImagePreview(null);
+        form.setValue('imageUrl', '', { shouldValidate: true }); // Clear value on error
+      } finally {
+        setIsMainImageUploading(false);
+      }
     } else {
-      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
+      if (mainImagePreview?.startsWith('blob:')) URL.revokeObjectURL(mainImagePreview);
       setMainImagePreview(null);
       form.setValue('imageUrl', '', { shouldValidate: true });
     }
@@ -101,34 +125,44 @@ export default function AddProductPage() {
   const handleAdditionalImagesUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const newPreviews: string[] = [];
-      const newDataUris: string[] = [];
-
-      // Clear previous previews and form values for additional images
-      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
-      setAdditionalImagePreviews([]);
-      form.setValue('additionalImageUrls', []);
-
-      const fileReadPromises = Array.from(files).map(file => {
-        newPreviews.push(URL.createObjectURL(file));
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+      setAreAdditionalImagesUploading(true);
+      additionalImagePreviews.forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
       });
+      
+      const localPreviews: string[] = Array.from(files).map(file => URL.createObjectURL(file));
+      setAdditionalImagePreviews(localPreviews);
+      form.setValue('additionalImageUrls', []); // Clear previous URLs
 
+      const uploadedUrls: string[] = [];
       try {
-        const dataUris = await Promise.all(fileReadPromises);
-        setAdditionalImagePreviews(newPreviews);
-        form.setValue('additionalImageUrls', dataUris, { shouldValidate: true });
-      } catch (error) {
-        console.error("Error reading additional images:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not read additional images." });
+        for (const file of Array.from(files)) {
+          const formData = new FormData();
+          formData.append('image', file);
+          const result = await uploadImageToImgBB(formData);
+          if (result.success && result.url) {
+            uploadedUrls.push(result.url);
+          } else {
+            throw new Error(result.error || `Failed to upload image ${file.name}.`);
+          }
+        }
+        form.setValue('additionalImageUrls', uploadedUrls, { shouldValidate: true });
+        // Optionally update previews to ImgBB URLs
+        // setAdditionalImagePreviews(uploadedUrls);
+        toast({ title: "Additional images uploaded!", description: `${uploadedUrls.length} image(s) successfully uploaded.`});
+      } catch (error: any) {
+        console.error("Additional images upload error:", error);
+        toast({ variant: "destructive", title: "Upload Error", description: error.message || "Could not upload some additional images." });
+        // Revert to local previews or clear if preferred
+        setAdditionalImagePreviews(localPreviews); // Keep local previews if some failed
+        form.setValue('additionalImageUrls', uploadedUrls.length > 0 ? uploadedUrls : [], { shouldValidate: true }); // Keep successfully uploaded URLs
+      } finally {
+        setAreAdditionalImagesUploading(false);
       }
     } else {
-      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      additionalImagePreviews.forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+      });
       setAdditionalImagePreviews([]);
       form.setValue('additionalImageUrls', [], { shouldValidate: true });
     }
@@ -159,8 +193,8 @@ export default function AddProductPage() {
         });
         form.reset();
         setMainImagePreview(null);
+        additionalImagePreviews.forEach(url => { if (url.startsWith('blob:')) URL.revokeObjectURL(url); });
         setAdditionalImagePreviews([]);
-        additionalImagePreviews.forEach(url => URL.revokeObjectURL(url)); // Clean up
         setVideoFilePreviewName(null);
         router.push('/admin-panel'); 
       } else {
@@ -280,15 +314,22 @@ export default function AddProductPage() {
                       id="mainImageUpload"
                       className="hidden"
                       onChange={handleMainImageUpload}
+                      disabled={isMainImageUploading}
                     />
                     <label
                       htmlFor="mainImageUpload"
                       className={cn(
                         "flex flex-col items-center justify-center w-full h-52 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
-                        form.formState.errors.imageUrl ? "border-destructive" : "border-input"
+                        form.formState.errors.imageUrl ? "border-destructive" : "border-input",
+                        isMainImageUploading ? "cursor-not-allowed opacity-70" : ""
                       )}
                     >
-                      {mainImagePreview ? (
+                      {isMainImageUploading ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <Loader2 className="w-10 h-10 mb-3 text-muted-foreground animate-spin" />
+                          <p className="text-sm text-muted-foreground">Uploading...</p>
+                        </div>
+                      ) : mainImagePreview ? (
                         <div className="relative w-full h-full">
                           <Image src={mainImagePreview} alt="Main Image Preview" layout="fill" objectFit="contain" className="rounded-md" />
                         </div>
@@ -339,21 +380,30 @@ export default function AddProductPage() {
                       id="additionalImagesUpload"
                       className="hidden"
                       onChange={handleAdditionalImagesUpload}
+                      disabled={areAdditionalImagesUploading}
                     />
                     <label
                       htmlFor="additionalImagesUpload"
                       className={cn(
                         "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted transition-colors",
-                        form.formState.errors.additionalImageUrls ? "border-destructive" : "border-input"
+                        form.formState.errors.additionalImageUrls ? "border-destructive" : "border-input",
+                        areAdditionalImagesUploading ? "cursor-not-allowed opacity-70" : ""
                       )}
                     >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          <span className="font-semibold">Click to upload additional images</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
-                      </div>
+                      {areAdditionalImagesUploading ? (
+                         <div className="flex flex-col items-center justify-center">
+                          <Loader2 className="w-8 h-8 mb-2 text-muted-foreground animate-spin" />
+                          <p className="text-sm text-muted-foreground">Uploading...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                          <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-semibold">Click to upload additional images</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
+                        </div>
+                      )}
                     </label>
                   </div>
                 </FormControl>
@@ -374,7 +424,7 @@ export default function AddProductPage() {
           <FormField
             control={form.control}
             name="videoUrl"
-            render={() => (
+            render={() => ( /* Video upload remains Data URI for now */
               <FormItem>
                 <FormLabel>Product Video (Optional)</FormLabel>
                 <FormControl>
@@ -436,8 +486,8 @@ export default function AddProductPage() {
             )}
           />
           
-          <Button type="submit" className="w-full md:w-auto" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Adding Product..." : "Add Product"}
+          <Button type="submit" className="w-full md:w-auto" disabled={form.formState.isSubmitting || isMainImageUploading || areAdditionalImagesUploading}>
+            {form.formState.isSubmitting ? "Adding Product..." : (isMainImageUploading || areAdditionalImagesUploading ? "Uploading Images..." : "Add Product")}
           </Button>
         </form>
       </Form>

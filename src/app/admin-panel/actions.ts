@@ -12,14 +12,14 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
   originalPrice: z.coerce.number().optional().transform(val => val === 0 || val === undefined || val === null ? undefined : val),
   description: z.string().min(10, "Description must be at least 10 characters."),
-  imageUrl: z.string().min(1, "Main image data is missing").startsWith("data:image/", { message: "Invalid main image data. Must be a data URI." }),
+  imageUrl: z.string().url({ message: "Please provide a valid URL for the main image." }).min(1, "Main image URL is required."),
   additionalImageUrls: z.array(
-    z.string().min(1, "Additional image data is missing").startsWith("data:image/", { message: "Invalid additional image data. Must be a data URI." })
+    z.string().url({ message: "Each additional image must have a valid URL." })
   ).optional(),
   videoUrl: z.string().startsWith("data:video/", { message: "Invalid video data. Must be a data URI." }).optional().or(z.literal('')),
   aiHint: z.string().min(3, "AI Hint must be at least 3 characters."),
   buyUrl: z.preprocess(
-    (val) => (val === "" ? undefined : val), 
+    (val) => (val === "" || val === null ? undefined : val), 
     z.string().url({ message: "Please enter a valid URL if provided." }).optional()
   ),
 });
@@ -123,4 +123,3 @@ export async function deleteProductAction(productId: string): Promise<DeleteProd
     return { success: false, error: `Failed to delete product: ${errorMessage}` };
   }
 }
-    
