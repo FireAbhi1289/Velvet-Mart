@@ -16,26 +16,24 @@ export type Product = {
 };
 
 // --- GitHub Configuration ---
+// CRITICAL: These environment variables MUST be set correctly in your .env.local file
+// AND in your Vercel (or other hosting provider) project settings.
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
-const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'products.json'; // Default path
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main'; // Default branch
+const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'products.json';
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
 // **Critical Check for Environment Variables**
-if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME || !GITHUB_FILE_PATH || !GITHUB_BRANCH) {
+if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
   const missingVars = [
-    !GITHUB_TOKEN && "GITHUB_TOKEN",
-    !GITHUB_REPO_OWNER && "GITHUB_REPO_OWNER",
-    !GITHUB_REPO_NAME && "GITHUB_REPO_NAME",
-    !GITHUB_FILE_PATH && "GITHUB_FILE_PATH", // GITHUB_FILE_PATH can have a default, but good to ensure it's explicitly set if intended.
-    !GITHUB_BRANCH && "GITHUB_BRANCH",     // GITHUB_BRANCH can have a default.
+    !GITHUB_TOKEN && "GITHUB_TOKEN (Ensure it's a valid Personal Access Token with 'repo' scope for private repos)",
+    !GITHUB_REPO_OWNER && "GITHUB_REPO_OWNER (Your GitHub username or organization)",
+    !GITHUB_REPO_NAME && "GITHUB_REPO_NAME (The name of your repository)",
   ].filter(Boolean).join(", ");
 
-  const errorMessage = `CRITICAL ERROR: Essential GitHub environment variables are not configured. Please ensure GITHUB_TOKEN, GITHUB_REPO_OWNER, and GITHUB_REPO_NAME are set in your .env.local file and deployment environment. Missing or defaults used for: ${missingVars || 'None (check logic if this appears incorrectly)'}. The application cannot manage product data without these core settings.`;
+  const errorMessage = `CRITICAL ERROR: Essential GitHub environment variables are not configured. Please set them in your .env.local and deployment environment. Missing or issues with: ${missingVars || 'None (check logic if this appears incorrectly)'}. The application cannot manage product data. A 401 Unauthorized error typically means GITHUB_TOKEN is invalid, expired, or lacks 'repo' scope.`;
   console.error(errorMessage);
-  // This will stop execution if core config is missing, making the issue very clear.
-  // This error will be thrown on the server when data.ts is imported and these vars are evaluated.
   throw new Error(errorMessage);
 }
 
@@ -44,37 +42,51 @@ const API_BASE_URL = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB
 interface GitHubFileResponse {
   content?: string; // Base64 encoded content
   sha?: string;
-  message?: string; // For errors
+  message?: string; // For errors from GitHub API
+  documentation_url?: string; // Often included in GitHub API error responses
 }
 
 // Helper to fetch products.json and its SHA from GitHub
 async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: string | null }> {
-  // Environment variables are checked at the module level now.
-
   try {
     const response = await fetch(`${API_BASE_URL}?ref=${GITHUB_BRANCH}`, {
+      method: 'GET',
       headers: {
+        // CRITICAL: The GITHUB_TOKEN is used here for authentication.
+        // A 401 Unauthorized error means this token is likely invalid, expired,
+        // or does not have the 'repo' scope for accessing your private repository.
         Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
       },
-      cache: 'no-store', // Ensure fresh data
+      cache: 'no-store',
     });
 
     if (response.status === 404) {
-      console.warn(`File not found at ${API_BASE_URL}?ref=${GITHUB_BRANCH}. Assuming empty product list and attempting to create on first write. Ensure the GITHUB_FILE_PATH and GITHUB_BRANCH are correct.`);
-      return { products: [], sha: null }; // Treat as empty, will attempt to create on write
+      console.warn(`File not found at ${API_BASE_URL}?ref=${GITHUB_BRANCH}. Assuming empty product list. Please ensure the file exists and is accessible, or it will be created on the first write attempt if the token has write permissions.`);
+      return { products: [], sha: null };
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response' }));
+      // Try to parse error message from GitHub for more details
+      const errorData: GitHubFileResponse = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response body.' }));
       console.error(`Error fetching products from GitHub (${response.status} ${response.statusText}):`, errorData);
-      throw new Error(`Failed to fetch products from GitHub: ${errorData.message || response.statusText} (Status: ${response.status})`);
+      let detailedMessage = errorData.message || `Status: ${response.status} ${response.statusText}`;
+      if (response.status === 401) {
+        detailedMessage = "GitHub API Authentication Failed (401 Unauthorized). Check your GITHUB_TOKEN: ensure it's correct, active, and has the 'repo' scope for private repositories.";
+      }
+      if (errorData.documentation_url) {
+        detailedMessage += ` See: ${errorData.documentation_url}`;
+      }
+      throw new Error(`Failed to fetch products from GitHub: ${detailedMessage}`);
     }
 
     const data: GitHubFileResponse = await response.json();
+    if (data.message && response.status !== 200) { // Handle cases where GitHub API returns an error message within a 2xx response (should be rare for GET file)
+        console.error('GitHub API returned an error message while fetching file:', data.message);
+        throw new Error(`GitHub API error: ${data.message}`);
+    }
     if (!data.content) {
-      // File exists but is empty
-      console.warn(`File at ${API_BASE_URL}?ref=${GITHUB_BRANCH} exists but is empty. Initializing as an empty array.`);
+      console.warn(`File at ${API_BASE_URL}?ref=${GITHUB_BRANCH} exists but is empty or content is missing. Initializing as an empty array.`);
       return { products: [], sha: data.sha || null };
     }
 
@@ -84,26 +96,23 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
       products = JSON.parse(decodedContent) as Product[];
     } catch (parseError) {
       console.error('Failed to parse products.json content from GitHub. Content was:', decodedContent, 'Error:', parseError);
-      throw new Error('Invalid JSON format in products.json from GitHub. Please ensure it contains a valid JSON array.');
+      throw new Error('Invalid JSON format in products.json from GitHub. Ensure it contains a valid JSON array (e.g., [] if empty).');
     }
     
     if (!Array.isArray(products)) {
-      console.error('Content of products.json from GitHub is not an array. Current content:', products, 'Please ensure it contains a valid JSON array (e.g., [] if empty).');
-      // To prevent further issues, treat as empty and let the next write operation attempt to fix it.
+      console.error('Content of products.json from GitHub is not an array. Current content:', products, 'Please ensure it contains a valid JSON array (e.g., [] if empty). This will be treated as an empty list, and the next write will attempt to overwrite it with a correct array structure.');
       return { products: [], sha: data.sha || null };
     }
     return { products, sha: data.sha || null };
 
   } catch (error) {
     console.error('Network or unexpected error in fetchProductsFromGitHub:', error);
-    // Re-throw to ensure the calling function knows something went wrong.
     throw new Error(`A network or unexpected error occurred while fetching product data: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 // Helper to write products.json back to GitHub
 async function writeProductsToGitHub(products: Product[], sha: string | null, commitMessage: string): Promise<boolean> {
-  // Environment variables checked at module level.
   try {
     const contentBase64 = Buffer.from(JSON.stringify(products, null, 2)).toString('base64');
     
@@ -118,14 +127,16 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
       branch: GITHUB_BRANCH,
     };
 
-    if (sha) { // SHA is required for updating an existing file
+    if (sha) { 
       body.sha = sha;
     }
-    // If sha is null, GitHub API creates the file if it doesn't exist (if response from fetchProductsFromGitHub was 404 and returned sha: null).
 
     const response = await fetch(API_BASE_URL, {
       method: 'PUT',
       headers: {
+        // CRITICAL: The GITHUB_TOKEN is used here for authentication.
+        // A 401 Unauthorized error means this token is likely invalid, expired,
+        // or does not have the 'repo' scope with write permissions for your private repository.
         Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
@@ -134,9 +145,17 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response during write' }));
+      const errorData: GitHubFileResponse = await response.json().catch(() => ({ message: 'Failed to parse GitHub API error response during write' }));
       console.error(`Error writing products to GitHub (${response.status} ${response.statusText}):`, errorData);
-      // Do not throw here, let the calling function decide based on 'false' return
+      let detailedMessage = errorData.message || `Status: ${response.status} ${response.statusText}`;
+      if (response.status === 401) {
+        detailedMessage = "GitHub API Authentication Failed (401 Unauthorized) during write. Check your GITHUB_TOKEN: ensure it's correct, active, and has 'repo' scope with write permissions.";
+      }
+      if (errorData.documentation_url) {
+        detailedMessage += ` See: ${errorData.documentation_url}`;
+      }
+      // Do not throw here for write, let the calling function decide based on 'false' return
+      console.error(`Full error from writeProductsToGitHub: ${detailedMessage}`);
       return false;
     }
     return true;
@@ -191,7 +210,7 @@ export async function addProduct(productData: AddProductData): Promise<Product |
 export type UpdateProductData = Partial<Omit<Product, 'id'>>;
 
 export async function updateProduct(productId: string, productData: UpdateProductData): Promise<Product | null> {
-  let { products, sha } = await fetchProductsFromGitHub(); // Make products mutable if needed
+  let { products, sha } = await fetchProductsFromGitHub();
   const productIndex = products.findIndex(p => p.id === productId);
 
   if (productIndex === -1) {
@@ -209,7 +228,7 @@ export async function updateProduct(productId: string, productData: UpdateProduc
     ...safeProductData,
   };
   
-  products[productIndex] = updatedProduct; // Update the product in the array
+  products[productIndex] = updatedProduct;
 
   const success = await writeProductsToGitHub(products, sha, `fix: Update product ${updatedProduct.name} (via app)`);
   return success ? updatedProduct : null;
@@ -229,8 +248,8 @@ export async function deleteProduct(productId: string): Promise<Product | null> 
   return success ? productToDelete : null;
 }
 
-// This list is a fallback and might not be actively used if GitHub fetching is primary.
-// For generateStaticParams, it's better to fetch live data if possible, or ensure this list is representative.
+// This list is primarily a fallback or for initial static generation if GitHub fetch fails during build.
+// For generateStaticParams, it's better to fetch live data.
 export const productsForStaticGeneration: Product[] = [
     {
     id: 'jwl1',
@@ -249,4 +268,3 @@ export const productsForStaticGeneration: Product[] = [
     buyUrl: '#',
   },
 ];
-    
