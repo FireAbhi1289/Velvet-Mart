@@ -1,4 +1,5 @@
-'use client'; // Add this directive
+
+'use client'; 
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,8 +12,11 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const fallbackImageUrl = `https://placehold.co/600x600.png?text=${encodeURIComponent(product.name.substring(0,15))}`;
+  
   // Ensure imageUrl is a string and starts with http, otherwise use fallback
-  const imageUrlToDisplay = (typeof product.imageUrl === 'string' && product.imageUrl.startsWith('http')) ? product.imageUrl : fallbackImageUrl;
+  const imageUrlToDisplay = (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://'))) 
+                           ? product.imageUrl 
+                           : fallbackImageUrl;
 
   return (
     <Card className="flex flex-col overflow-hidden h-full transition-shadow duration-300 hover:shadow-lg">
@@ -26,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             className="transition-opacity duration-300 group-hover:opacity-90"
             data-ai-hint={imageUrlToDisplay === fallbackImageUrl ? "placeholder image" : product.aiHint}
             onError={(e) => {
-              // If ImgBB URL fails, try to set to fallback directly
+              // If ImgBB URL (or any URL) fails, try to set to fallback directly
               if ((e.target as HTMLImageElement).src !== fallbackImageUrl) {
                 (e.target as HTMLImageElement).src = fallbackImageUrl;
                  // Optional: to trigger a re-render if next/image caches the failed src

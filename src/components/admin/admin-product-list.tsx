@@ -100,43 +100,55 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
 
       {productsToDisplay.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {productsToDisplay.map((product) => (
-            <Card key={product.id} className="flex flex-col">
-              <CardHeader>
-                <div className="relative h-40 w-full mb-2">
-                  <Image
-                    src={product.imageUrl || "https://picsum.photos/seed/placeholder/300/200"}
-                    alt={product.name}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-md"
-                    data-ai-hint={product.aiHint || "product image"}
-                  />
-                </div>
-                <CardTitle>{product.name}</CardTitle>
-                <CardDescription>
-                  <Badge variant="secondary" className="capitalize">{product.category}</Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-lg font-semibold text-primary">₹{product.price.toFixed(2)}</p>
-                {product.originalPrice && product.originalPrice > product.price && (
-                    <p className="text-sm text-muted-foreground line-through">
-                        ₹{product.originalPrice.toFixed(2)}
-                    </p>
-                )}
-                <p className="text-sm text-muted-foreground line-clamp-3">{product.description}</p>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" size="icon" asChild title="Edit Product">
-                  <Link href={`/admin-panel/edit-product/${product.id}`}>
-                    <Edit className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <DeleteProductButton productId={product.id} productName={product.name} />
-              </CardFooter>
-            </Card>
-          ))}
+          {productsToDisplay.map((product) => {
+            const fallbackImageUrl = `https://placehold.co/300x200.png?text=${encodeURIComponent(product.name.substring(0,10))}`;
+            const imageUrlToDisplay = (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://')))
+                                      ? product.imageUrl
+                                      : fallbackImageUrl;
+            return (
+              <Card key={product.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="relative h-40 w-full mb-2">
+                    <Image
+                      src={imageUrlToDisplay}
+                      alt={product.name}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-md"
+                      data-ai-hint={imageUrlToDisplay === fallbackImageUrl ? "placeholder image" : (product.aiHint || "product image")}
+                      onError={(e) => {
+                        if ((e.target as HTMLImageElement).src !== fallbackImageUrl) {
+                          (e.target as HTMLImageElement).src = fallbackImageUrl;
+                          (e.target as HTMLImageElement).srcset = "";
+                        }
+                      }}
+                    />
+                  </div>
+                  <CardTitle>{product.name}</CardTitle>
+                  <CardDescription>
+                    <Badge variant="secondary" className="capitalize">{product.category}</Badge>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-lg font-semibold text-primary">₹{product.price.toFixed(2)}</p>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                      <p className="text-sm text-muted-foreground line-through">
+                          ₹{product.originalPrice.toFixed(2)}
+                      </p>
+                  )}
+                  <p className="text-sm text-muted-foreground line-clamp-3">{product.description}</p>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline" size="icon" asChild title="Edit Product">
+                    <Link href={`/admin-panel/edit-product/${product.id}`}>
+                      <Edit className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <DeleteProductButton productId={product.id} productName={product.name} />
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <Card className="col-span-full">
