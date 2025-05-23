@@ -8,6 +8,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import Link from 'next/link';
 import ProductMediaGallery from '@/components/product-media-gallery';
 
+export const dynamic = 'force-static'; // Explicitly mark for static generation
 export const revalidate = 300; // Revalidate this page at most every 5 minutes
 
 type ProductPageProps = {
@@ -96,3 +97,4 @@ export default async function ProductPage({ params }: ProductPageProps) {
     </div>
   );
 }
+
