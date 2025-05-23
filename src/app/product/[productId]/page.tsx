@@ -8,6 +8,8 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import Link from 'next/link';
 import ProductMediaGallery from '@/components/product-media-gallery';
 
+export const revalidate = 300; // Revalidate this page at most every 5 minutes
+
 type ProductPageProps = {
   params: {
     productId: string;
@@ -22,7 +24,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = await getProductById(params.productId); // Now async
+  const product = await getProductById(params.productId); 
 
   if (!product) {
     return {
@@ -38,7 +40,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductById(params.productId); // Now async
+  const product = await getProductById(params.productId); 
 
   if (!product) {
     notFound();

@@ -1,19 +1,25 @@
-
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  experimental: {
-    outputFileTracingIncludes: {
-      '/*': ['.next/server/vendor-chunks/**/*'],
-    },
+
+  // ✅ Moved out of experimental as per Next.js 15+ changes
+  outputFileTracingIncludes: {
+    '/*': ['.next/server/vendor-chunks/**/*'],
   },
+
+  experimental: {
+    // You can add other experimental features here if needed
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },
+
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   images: {
     remotePatterns: [
       {
@@ -39,7 +45,7 @@ const nextConfig: NextConfig = {
         hostname: 'placehold.co', // Added for fallback images
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 };

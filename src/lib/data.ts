@@ -51,10 +51,10 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
     const response = await fetch(`${API_BASE_URL}?ref=${GITHUB_BRANCH}`, {
       method: 'GET',
       headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
+        Authorization: `token ${GITHUB_TOKEN}`, // Ensure GITHUB_TOKEN is valid and has 'repo' scope
         Accept: 'application/vnd.github.v3+json',
       },
-      cache: 'no-store', // Ensure fresh data is fetched
+      next: { revalidate: 60 }, // Cache for 60 seconds, allows SSG and provides relatively fresh data
     });
 
     if (!response.ok) {
@@ -65,30 +65,34 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
         errorBodyText = await response.text(); // Get raw text first
         parsedErrorData = JSON.parse(errorBodyText) as GitHubFileResponse; // Then try to parse
       } catch (e) {
-        // If parsing as JSON fails, errorBodyText will contain the raw response
         console.warn(`Failed to parse GitHub API error response as JSON during fetch. Raw text (if available): '${errorBodyText}'`, e);
       }
-
+      
       const errorToLog = parsedErrorData || { message: errorBodyText || `Status: ${response.status} ${response.statusText}` };
-      console.error(`Error fetching products from GitHub (${response.status} ${response.statusText}):`, JSON.stringify(errorToLog, null, 2));
-
-      let detailedMessage = errorToLog.message || `Status: ${response.status} ${response.statusText}`;
-
+      
       if (response.status === 401) {
-        detailedMessage = `GitHub API Authentication Failed (401 Unauthorized). This is almost always due to an invalid or misconfigured GITHUB_TOKEN. 
+        const detailedMessage = `GitHub API Authentication Failed (401 Unauthorized). This is almost always due to an invalid or misconfigured GITHUB_TOKEN. 
         Troubleshooting steps:
         1. Verify GITHUB_TOKEN in your .env.local file AND in your Vercel/hosting environment variables.
         2. Ensure the token is correct, active (not expired).
         3. Confirm the token has the 'repo' scope (for full access to private repositories).
         4. Check GITHUB_REPO_OWNER ('${GITHUB_REPO_OWNER}') and GITHUB_REPO_NAME ('${GITHUB_REPO_NAME}') are correct.
-        Raw error from GitHub (if available): "${errorBodyText.replace(/"/g, '\\"')}"`; // Escape quotes for better logging
+        Raw error from GitHub (if available): "${errorBodyText.replace(/"/g, '\\"')}"`;
+        console.error(detailedMessage);
+        throw new Error(detailedMessage);
       } else if (response.status === 404) {
-         detailedMessage = `GitHub API Error (404 Not Found). The file '${GITHUB_FILE_PATH}' might not exist in the branch '${GITHUB_BRANCH}' of repository '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}', or the repository itself is not accessible with the provided token. Ensure products.json exists and is initialized (e.g., with []). Raw error: ${errorBodyText}`;
+        const detailedMessage = `GitHub API Error (404 Not Found). The file '${GITHUB_FILE_PATH}' might not exist in the branch '${GITHUB_BRANCH}' of repository '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}', or the repository itself is not accessible with the provided token. Ensure products.json exists and is initialized (e.g., with []). Raw error: ${errorBodyText}`;
+        console.error(detailedMessage);
+        throw new Error(detailedMessage);
       } else if (response.status === 403) {
-        detailedMessage = `GitHub API Error (403 Forbidden). The GITHUB_TOKEN might not have sufficient permissions for the operation, or an abuse detection mechanism might have been triggered. Raw error: ${errorBodyText}`;
+         const detailedMessage = `GitHub API Error (403 Forbidden). The GITHUB_TOKEN might not have sufficient permissions for the operation, or an abuse detection mechanism might have been triggered. Raw error: ${errorBodyText}`;
+         console.error(detailedMessage);
+         throw new Error(detailedMessage);
       }
 
-
+      // General error logging for other statuses
+      console.error(`Error fetching products from GitHub (${response.status} ${response.statusText}):`, errorToLog);
+      let detailedMessage = errorToLog.message || `Status: ${response.status} ${response.statusText}`;
       if (parsedErrorData?.documentation_url) {
         detailedMessage += ` See: ${parsedErrorData.documentation_url}`;
       }
@@ -96,21 +100,18 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
     }
 
     const data: GitHubFileResponse = await response.json();
-    if (data.message && response.status !== 200) { // Should be caught by !response.ok, but as a safeguard
+    if (data.message && response.status !== 200) { 
         console.error('GitHub API returned an error message while fetching file (status was 200 but message present):', data.message);
         throw new Error(`GitHub API error: ${data.message}`);
     }
     if (!data.content && response.status === 200 && data.sha) {
-      // File exists but is empty or somehow content is missing but SHA is present
       console.warn(`File at ${API_BASE_URL}?ref=${GITHUB_BRANCH} exists (SHA: ${data.sha}) but content is empty or missing. Initializing as an empty array. Ensure the file contains valid JSON (e.g., [] if empty).`);
       return { products: [], sha: data.sha };
     }
     if (!data.content) {
-      // This case should ideally be covered by the 404 handling, but as a fallback.
       console.error(`File content is missing from GitHub response for ${GITHUB_FILE_PATH}, and response was not a 404. This is unexpected. Ensure products.json exists and is initialized.`);
       throw new Error(`File content missing from GitHub response for ${GITHUB_FILE_PATH}. Ensure products.json exists and is initialized (e.g. with []).`);
     }
-
 
     const decodedContent = Buffer.from(data.content, 'base64').toString('utf-8');
     let products;
@@ -129,8 +130,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
 
   } catch (error) {
     console.error('Network or unexpected error in fetchProductsFromGitHub:', error);
-    // Re-throw the error to be caught by the calling function, preserving specific messages if already thrown
-    if (error instanceof Error && error.message.startsWith('Failed to fetch products from GitHub:')) {
+    if (error instanceof Error && (error.message.startsWith('Failed to fetch products from GitHub:') || error.message.startsWith('GitHub API Authentication Failed') || error.message.startsWith('GitHub API Error'))) {
         throw error;
     }
     throw new Error(`A network or unexpected error occurred while fetching product data: ${error instanceof Error ? error.message : String(error)}`);
@@ -153,25 +153,16 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
       branch: GITHUB_BRANCH,
     };
 
-    // SHA is required for updating an existing file. 
-    // If SHA is null, it implies we are trying to create a new file or the fetch failed to get SHA.
-    // GitHub API for creating a file is the same PUT, but without SHA IF the file does not exist.
-    // If the file exists and SHA is not provided, it will fail.
-    // Our logic assumes fetchProductsFromGitHub provides SHA if the file exists.
     if (sha) { 
       body.sha = sha;
     } else {
-      // This case should be rare if fetchProductsFromGitHub worked and the file exists.
-      // If the file truly doesn't exist, and we're trying to create it,
-      // omitting SHA is correct. But if it exists and sha is null, it's an issue.
-      console.warn('SHA is null in writeProductsToGitHub. This might lead to an error if the file already exists on GitHub.');
+      console.warn('SHA is null in writeProductsToGitHub. This might lead to an error if the file already exists on GitHub and this is not the first commit.');
     }
-
 
     const response = await fetch(API_BASE_URL, {
       method: 'PUT',
       headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
+        Authorization: `token ${GITHUB_TOKEN}`, // Ensure GITHUB_TOKEN is valid and has 'repo' scope
         Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
@@ -189,7 +180,6 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
       }
       const errorToLog = parsedErrorData || { message: errorBodyText || `Status: ${response.status} ${response.statusText}` };
       console.error(`Error writing products to GitHub (${response.status} ${response.statusText}):`, JSON.stringify(errorToLog, null, 2));
-      // Do not throw here for write, let the calling function decide based on 'false' return
       return false;
     }
     return true;
@@ -282,11 +272,10 @@ export async function deleteProduct(productId: string): Promise<Product | null> 
   return success ? productToDelete : null;
 }
 
-
 // This list is primarily a fallback or for initial static generation if GitHub fetch fails during build.
-// It's not actively used if GitHub fetch is successful.
+// It's also used by generateStaticParams.
 export const productsForStaticGeneration: Product[] = [
-    {
+  {
     id: 'jwl1',
     name: 'Silver Necklace',
     category: 'jewelry',
@@ -298,8 +287,28 @@ export const productsForStaticGeneration: Product[] = [
       'https://placehold.co/600x600.png?text=Necklace+Alt+1',
       'https://placehold.co/600x600.png?text=Necklace+Alt+2',
     ],
-    // videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', 
     aiHint: 'silver necklace elegant pendant',
     buyUrl: '#',
+  },
+  // Add other representative products here if needed for generateStaticParams
+  {
+    id: 'bk1',
+    name: 'The Midnight Library',
+    category: 'books',
+    price: 15.99,
+    originalPrice: 20.00,
+    description: 'A novel about regrets, hope, and the choices we make, exploring infinite possibilities.',
+    imageUrl: 'https://placehold.co/600x600.png?text=Midnight+Library',
+    aiHint: 'book cover fantasy novel',
+  },
+  {
+    id: 'gdg1',
+    name: 'Wireless Earbuds',
+    category: 'gadgets',
+    price: 89.99,
+    originalPrice: 110.00,
+    description: 'High-quality wireless earbuds with noise cancellation and long battery life.',
+    imageUrl: 'https://placehold.co/600x600.png?text=Wireless+Earbuds',
+    aiHint: 'wireless earbuds modern sleek',
   },
 ];
