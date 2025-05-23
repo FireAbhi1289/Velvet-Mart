@@ -1,4 +1,6 @@
 
+'use server';
+
 import { v4 as uuidv4 } from 'uuid';
 
 export type Product = {
@@ -51,19 +53,19 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
     const response = await fetch(`${API_BASE_URL}?ref=${GITHUB_BRANCH}`, {
       method: 'GET',
       headers: {
-        Authorization: `token ${GITHUB_TOKEN}`, // Ensure GITHUB_TOKEN is valid and has 'repo' scope
+        Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
       },
-      next: { revalidate: 60 }, // Cache for 60 seconds, allows SSG and provides relatively fresh data
+      next: { revalidate: 60 }, // IMPORTANT: Cache for 60 seconds, allows ISR
     });
 
     if (!response.ok) {
-      let errorBodyText = ''; // To store raw text if JSON parsing fails
+      let errorBodyText = ''; 
       let parsedErrorData: GitHubFileResponse | null = null;
 
       try {
-        errorBodyText = await response.text(); // Get raw text first
-        parsedErrorData = JSON.parse(errorBodyText) as GitHubFileResponse; // Then try to parse
+        errorBodyText = await response.text(); 
+        parsedErrorData = JSON.parse(errorBodyText) as GitHubFileResponse;
       } catch (e) {
         console.warn(`Failed to parse GitHub API error response as JSON during fetch. Raw text (if available): '${errorBodyText}'`, e);
       }
@@ -90,7 +92,6 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
          throw new Error(detailedMessage);
       }
 
-      // General error logging for other statuses
       console.error(`Error fetching products from GitHub (${response.status} ${response.statusText}):`, errorToLog);
       let detailedMessage = errorToLog.message || `Status: ${response.status} ${response.statusText}`;
       if (parsedErrorData?.documentation_url) {
@@ -130,7 +131,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
 
   } catch (error) {
     console.error('Network or unexpected error in fetchProductsFromGitHub:', error);
-    if (error instanceof Error && (error.message.startsWith('Failed to fetch products from GitHub:') || error.message.startsWith('GitHub API Authentication Failed') || error.message.startsWith('GitHub API Error'))) {
+    if (error instanceof Error && (error.message.startsWith('Failed to fetch products from GitHub:') || error.message.startsWith('GitHub API Authentication Failed') || error.message.startsWith('GitHub API Error') || error.message.startsWith('CRITICAL ERROR:'))) {
         throw error;
     }
     throw new Error(`A network or unexpected error occurred while fetching product data: ${error instanceof Error ? error.message : String(error)}`);
@@ -156,13 +157,18 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
     if (sha) { 
       body.sha = sha;
     } else {
-      console.warn('SHA is null in writeProductsToGitHub. This might lead to an error if the file already exists on GitHub and this is not the first commit.');
+      // This case (SHA is null) would typically only happen if the file doesn't exist yet.
+      // The GitHub API for creating a file is slightly different (no SHA).
+      // For simplicity, this function assumes the file exists if sha is null and might lead to errors
+      // if trying to "update" a non-existent file without a SHA.
+      // However, fetchProductsFromGitHub should provide an SHA if the file exists, even if empty.
+      console.warn('SHA is null in writeProductsToGitHub. This is unusual if the file already exists. If creating a new file, the API expects no SHA. If updating, an SHA is required.');
     }
 
     const response = await fetch(API_BASE_URL, {
       method: 'PUT',
       headers: {
-        Authorization: `token ${GITHUB_TOKEN}`, // Ensure GITHUB_TOKEN is valid and has 'repo' scope
+        Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
@@ -221,6 +227,10 @@ export type AddProductData = Omit<Product, 'id'>;
 
 export async function addProduct(productData: AddProductData): Promise<Product | null> {
   const { products, sha } = await fetchProductsFromGitHub();
+  if (sha === null && products.length > 0) { // Edge case: fetch succeeded but somehow no SHA for existing file.
+      console.error("Cannot add product: products.json exists but its SHA couldn't be retrieved. Please check GitHub.");
+      return null;
+  }
   const newProduct: Product = {
     ...productData,
     id: uuidv4(),
@@ -235,6 +245,10 @@ export type UpdateProductData = Partial<Omit<Product, 'id'>>;
 
 export async function updateProduct(productId: string, productData: UpdateProductData): Promise<Product | null> {
   let { products, sha } = await fetchProductsFromGitHub();
+  if (sha === null) {
+      console.error("Cannot update product: products.json SHA couldn't be retrieved. Please check GitHub if the file exists.");
+      return null;
+  }
   const productIndex = products.findIndex(p => p.id === productId);
 
   if (productIndex === -1) {
@@ -260,6 +274,10 @@ export async function updateProduct(productId: string, productData: UpdateProduc
 
 export async function deleteProduct(productId: string): Promise<Product | null> {
   const { products, sha } = await fetchProductsFromGitHub();
+   if (sha === null) {
+      console.error("Cannot delete product: products.json SHA couldn't be retrieved. Please check GitHub if the file exists.");
+      return null;
+  }
   const productToDelete = products.find(p => p.id === productId);
   
   if (!productToDelete) {
@@ -290,7 +308,6 @@ export const productsForStaticGeneration: Product[] = [
     aiHint: 'silver necklace elegant pendant',
     buyUrl: '#',
   },
-  // Add other representative products here if needed for generateStaticParams
   {
     id: 'bk1',
     name: 'The Midnight Library',

@@ -1,14 +1,13 @@
 
-import { getProductById, productsForStaticGeneration as allProducts, type Product } from '@/lib/data'; // Updated import
+import { getProductById, productsForStaticGeneration, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
 import BuyButton from '@/components/buy-button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
 import ProductMediaGallery from '@/components/product-media-gallery';
 
-export const dynamic = 'force-static'; // Explicitly mark for static generation
+export const dynamic = 'force-static';
 export const revalidate = 300; // Revalidate this page at most every 5 minutes
 
 type ProductPageProps = {
@@ -18,8 +17,13 @@ type ProductPageProps = {
 };
 
 export async function generateStaticParams() {
-  // Use the static list for generating params during build
-  return allProducts.map((product) => ({
+  // Use the static list for generating params during build initially.
+  // If fetchProductsFromGitHub works during build, Next.js might explore more.
+  // However, to ensure a stable build even if GitHub is temporarily down,
+  // it's safer to rely on a predefined list for generateStaticParams.
+  // The `productsForStaticGeneration` array should contain IDs of products you want to pre-build.
+  // For other products, they will be generated on-demand (ISR).
+  return productsForStaticGeneration.map((product) => ({
     productId: product.id,
   }));
 }
@@ -97,4 +101,3 @@ export default async function ProductPage({ params }: ProductPageProps) {
     </div>
   );
 }
-

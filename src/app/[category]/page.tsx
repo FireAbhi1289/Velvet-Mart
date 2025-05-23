@@ -19,9 +19,6 @@ type CategoryPageProps = {
 
 // Function to generate static paths for categories
 export async function generateStaticParams() {
-  // For now, keep predefined categories for static generation.
-  // If you want this to be dynamic based on products.json,
-  // you'd read the file here and extract unique categories.
   const categories = ['jewelry', 'books', 'gadgets'];
   return categories.map((category) => ({
     category,
@@ -34,6 +31,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const validCategories: Product['category'][] = ['jewelry', 'books', 'gadgets'];
 
   if (!validCategories.includes(category as Product['category'])) {
+    // This case should ideally be caught by generateStaticParams or handled by notFound in the page
     return {
       title: 'Category Not Found',
     };
