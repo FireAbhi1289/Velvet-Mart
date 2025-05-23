@@ -10,7 +10,8 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
-    // You can add other experimental features here if needed
+    // Attempt to fix issues with OpenTelemetry in standalone build
+    serverComponentsExternalPackages: ['@opentelemetry/api'],
   },
 
   typescript: {
