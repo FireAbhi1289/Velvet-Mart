@@ -8,10 +8,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/*': ['.next/server/vendor-chunks/**/*'],
   },
+  serverExternalPackages: ['@opentelemetry/api'], // ✅ Moved out of experimental
 
   experimental: {
-    // Attempt to fix issues with OpenTelemetry in standalone build
-    serverComponentsExternalPackages: ['@opentelemetry/api'],
+    // serverComponentsExternalPackages: ['@opentelemetry/api'], // ❌ Removed from here
   },
 
   typescript: {

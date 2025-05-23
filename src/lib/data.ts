@@ -56,7 +56,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
         Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
       },
-      next: { revalidate: 60 }, // IMPORTANT: Cache for 60 seconds, allows ISR
+      next: { revalidate: 60 }, 
     });
 
     if (!response.ok) {
@@ -67,7 +67,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
         errorBodyText = await response.text(); 
         parsedErrorData = JSON.parse(errorBodyText) as GitHubFileResponse;
       } catch (e) {
-        console.warn(`Failed to parse GitHub API error response as JSON during fetch. Raw text (if available): '${errorBodyText}'`, e);
+        // console.warn(`Failed to parse GitHub API error response as JSON during fetch. Raw text (if available): '${errorBodyText}'`, e);
       }
       
       const errorToLog = parsedErrorData || { message: errorBodyText || `Status: ${response.status} ${response.statusText}` };
@@ -157,11 +157,6 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
     if (sha) { 
       body.sha = sha;
     } else {
-      // This case (SHA is null) would typically only happen if the file doesn't exist yet.
-      // The GitHub API for creating a file is slightly different (no SHA).
-      // For simplicity, this function assumes the file exists if sha is null and might lead to errors
-      // if trying to "update" a non-existent file without a SHA.
-      // However, fetchProductsFromGitHub should provide an SHA if the file exists, even if empty.
       console.warn('SHA is null in writeProductsToGitHub. This is unusual if the file already exists. If creating a new file, the API expects no SHA. If updating, an SHA is required.');
     }
 
@@ -227,7 +222,7 @@ export type AddProductData = Omit<Product, 'id'>;
 
 export async function addProduct(productData: AddProductData): Promise<Product | null> {
   const { products, sha } = await fetchProductsFromGitHub();
-  if (sha === null && products.length > 0) { // Edge case: fetch succeeded but somehow no SHA for existing file.
+  if (sha === null && products.length > 0) { 
       console.error("Cannot add product: products.json exists but its SHA couldn't be retrieved. Please check GitHub.");
       return null;
   }
@@ -292,6 +287,9 @@ export async function deleteProduct(productId: string): Promise<Product | null> 
 
 // This list is primarily a fallback or for initial static generation if GitHub fetch fails during build.
 // It's also used by generateStaticParams.
+// This is NO LONGER EXPORTED from here to avoid "use server" issues.
+// It should be defined directly in the file that uses it (e.g., product/[productId]/page.tsx).
+/*
 export const productsForStaticGeneration: Product[] = [
   {
     id: 'jwl1',
@@ -329,3 +327,4 @@ export const productsForStaticGeneration: Product[] = [
     aiHint: 'wireless earbuds modern sleek',
   },
 ];
+*/

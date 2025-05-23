@@ -1,5 +1,5 @@
 
-import { getProductById, productsForStaticGeneration, type Product } from '@/lib/data';
+import { getProductById, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import BuyButton from '@/components/buy-button';
@@ -10,6 +10,47 @@ import ProductMediaGallery from '@/components/product-media-gallery';
 export const dynamic = 'force-static';
 export const revalidate = 300; // Revalidate this page at most every 5 minutes
 
+// Define productsForStaticGeneration directly here
+const productsForStaticGeneration: Product[] = [
+  {
+    id: 'jwl1',
+    name: 'Silver Necklace',
+    category: 'jewelry',
+    price: 120.00,
+    originalPrice: 150.00,
+    description: 'Elegant silver necklace with a delicate pendant. Perfect for everyday wear or special occasions.',
+    imageUrl: 'https://placehold.co/600x600.png?text=Silver+Necklace',
+    additionalImageUrls: [
+      'https://placehold.co/600x600.png?text=Necklace+Alt+1',
+      'https://placehold.co/600x600.png?text=Necklace+Alt+2',
+    ],
+    aiHint: 'silver necklace elegant pendant',
+    buyUrl: '#',
+  },
+  {
+    id: 'bk1',
+    name: 'The Midnight Library',
+    category: 'books',
+    price: 15.99,
+    originalPrice: 20.00,
+    description: 'A novel about regrets, hope, and the choices we make, exploring infinite possibilities.',
+    imageUrl: 'https://placehold.co/600x600.png?text=Midnight+Library',
+    aiHint: 'book cover fantasy novel',
+  },
+  {
+    id: 'gdg1',
+    name: 'Wireless Earbuds',
+    category: 'gadgets',
+    price: 89.99,
+    originalPrice: 110.00,
+    description: 'High-quality wireless earbuds with noise cancellation and long battery life.',
+    imageUrl: 'https://placehold.co/600x600.png?text=Wireless+Earbuds',
+    aiHint: 'wireless earbuds modern sleek',
+  },
+  // Add more representative products if needed for initial static generation
+];
+
+
 type ProductPageProps = {
   params: {
     productId: string;
@@ -17,12 +58,6 @@ type ProductPageProps = {
 };
 
 export async function generateStaticParams() {
-  // Use the static list for generating params during build initially.
-  // If fetchProductsFromGitHub works during build, Next.js might explore more.
-  // However, to ensure a stable build even if GitHub is temporarily down,
-  // it's safer to rely on a predefined list for generateStaticParams.
-  // The `productsForStaticGeneration` array should contain IDs of products you want to pre-build.
-  // For other products, they will be generated on-demand (ISR).
   return productsForStaticGeneration.map((product) => ({
     productId: product.id,
   }));
