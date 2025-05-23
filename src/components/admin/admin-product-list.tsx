@@ -6,12 +6,12 @@ import type { Product } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Edit, Search } from 'lucide-react'; // Added Search icon
+import { Edit, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import DeleteProductButton from '@/components/admin/delete-product-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input'; // Added Input for search
+import { Input } from '@/components/ui/input';
 
 interface AdminProductListClientProps {
   initialProducts: Product[];
@@ -23,20 +23,29 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [mounted, setMounted] = useState(false);
+  // State for image URLs to handle errors individually
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Initialize image URLs
+    const initialImageUrls: Record<string, string> = {};
+    initialProducts.forEach(product => {
+      const fallback = `https://placehold.co/300x200.png?text=${encodeURIComponent(product.name.substring(0,10) || "Prod")}`;
+      initialImageUrls[product.id] = (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://')))
+                                     ? product.imageUrl
+                                     : fallback;
+    });
+    setImageUrls(initialImageUrls);
+  }, [initialProducts]);
 
   const productsToDisplay = useMemo(() => {
     let filteredProducts = initialProducts;
 
-    // Filter by category
     if (selectedCategory !== 'all') {
       filteredProducts = filteredProducts.filter(product => product.category === selectedCategory);
     }
 
-    // Filter by search term
     if (searchTerm.trim() !== '') {
       const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
       filteredProducts = filteredProducts.filter(product =>
@@ -44,17 +53,21 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
         product.description.toLowerCase().includes(lowercasedSearchTerm)
       );
     }
-
     return filteredProducts;
   }, [initialProducts, selectedCategory, searchTerm]);
 
+  const handleImageError = (productId: string) => {
+    const product = initialProducts.find(p => p.id === productId);
+    const fallback = `https://placehold.co/300x200.png?text=${encodeURIComponent(product?.name.substring(0,10) || "Error")}`;
+    setImageUrls(prev => ({ ...prev, [productId]: fallback }));
+  };
+
   if (!mounted) {
+    // Skeleton loader
     return (
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Placeholder for select */}
           <div className="w-full md:w-[200px] h-10 bg-muted rounded-md animate-pulse"></div>
-          {/* Placeholder for search input */}
           <div className="flex-grow h-10 bg-muted rounded-md animate-pulse"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -101,10 +114,7 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
       {productsToDisplay.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {productsToDisplay.map((product) => {
-            const fallbackImageUrl = `https://placehold.co/300x200.png?text=${encodeURIComponent(product.name.substring(0,10))}`;
-            const imageUrlToDisplay = (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://')))
-                                      ? product.imageUrl
-                                      : fallbackImageUrl;
+            const imageUrlToDisplay = imageUrls[product.id] || `https://placehold.co/300x200.png?text=${encodeURIComponent(product.name.substring(0,10) || "Prod")}`;
             return (
               <Card key={product.id} className="flex flex-col">
                 <CardHeader>
@@ -115,13 +125,8 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
                       layout="fill"
                       objectFit="cover"
                       className="rounded-md"
-                      data-ai-hint={imageUrlToDisplay === fallbackImageUrl ? "placeholder image" : (product.aiHint || "product image")}
-                      onError={(e) => {
-                        if ((e.target as HTMLImageElement).src !== fallbackImageUrl) {
-                          (e.target as HTMLImageElement).src = fallbackImageUrl;
-                          (e.target as HTMLImageElement).srcset = "";
-                        }
-                      }}
+                      data-ai-hint={imageUrlToDisplay.includes('placehold.co') ? "placeholder image" : (product.aiHint || "product image")}
+                      onError={() => handleImageError(product.id)}
                     />
                   </div>
                   <CardTitle>{product.name}</CardTitle>

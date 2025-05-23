@@ -5,38 +5,39 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react'; // Import useState for handling image errors
 
-interface ProductCardProps {
-  product: Product;
-}
-
-export default function ProductCard({ product }: ProductCardProps) {
-  const fallbackImageUrl = `https://placehold.co/600x600.png?text=${encodeURIComponent(product.name.substring(0,15))}`;
+export default function ProductCard({ product }: { product: Product }) {
+  // Fallback image if product.imageUrl is problematic
+  const fallbackImageUrl = `https://placehold.co/600x600.png?text=${encodeURIComponent(product.name.substring(0,15) || "Product")}`;
   
-  // Ensure imageUrl is a string and starts with http, otherwise use fallback
-  const imageUrlToDisplay = (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://'))) 
-                           ? product.imageUrl 
-                           : fallbackImageUrl;
+  // State to manage current image source, initially product.imageUrl or fallback
+  const [currentImageUrl, setCurrentImageUrl] = useState(
+    (typeof product.imageUrl === 'string' && (product.imageUrl.startsWith('http://') || product.imageUrl.startsWith('https://'))) 
+    ? product.imageUrl 
+    : fallbackImageUrl
+  );
+
+  // Handle image loading errors
+  const handleError = () => {
+    // If an error occurs, and we're not already showing the fallback, switch to fallback
+    if (currentImageUrl !== fallbackImageUrl) {
+      setCurrentImageUrl(fallbackImageUrl);
+    }
+  };
 
   return (
     <Card className="flex flex-col overflow-hidden h-full transition-shadow duration-300 hover:shadow-lg">
       <Link href={`/product/${product.id}`} className="block group flex-grow flex flex-col">
         <CardHeader className="relative p-0 h-60">
           <Image
-            src={imageUrlToDisplay}
+            src={currentImageUrl}
             alt={product.name}
             layout="fill"
             objectFit="cover"
             className="transition-opacity duration-300 group-hover:opacity-90"
-            data-ai-hint={imageUrlToDisplay === fallbackImageUrl ? "placeholder image" : product.aiHint}
-            onError={(e) => {
-              // If ImgBB URL (or any URL) fails, try to set to fallback directly
-              if ((e.target as HTMLImageElement).src !== fallbackImageUrl) {
-                (e.target as HTMLImageElement).src = fallbackImageUrl;
-                 // Optional: to trigger a re-render if next/image caches the failed src
-                (e.target as HTMLImageElement).srcset = ""; 
-              }
-            }}
+            data-ai-hint={currentImageUrl === fallbackImageUrl ? "placeholder image" : (product.aiHint || "product image")}
+            onError={handleError}
           />
         </CardHeader>
         <CardContent className="p-4 flex-grow">

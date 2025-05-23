@@ -65,6 +65,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
         errorBodyText = await response.text(); // Get raw text first
         parsedErrorData = JSON.parse(errorBodyText) as GitHubFileResponse; // Then try to parse
       } catch (e) {
+        // If parsing as JSON fails, errorBodyText will contain the raw response
         console.warn(`Failed to parse GitHub API error response as JSON during fetch. Raw text (if available): '${errorBodyText}'`, e);
       }
 
@@ -82,7 +83,7 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
         4. Check GITHUB_REPO_OWNER ('${GITHUB_REPO_OWNER}') and GITHUB_REPO_NAME ('${GITHUB_REPO_NAME}') are correct.
         Raw error from GitHub (if available): "${errorBodyText.replace(/"/g, '\\"')}"`; // Escape quotes for better logging
       } else if (response.status === 404) {
-         detailedMessage = `GitHub API Error (404 Not Found). The file '${GITHUB_FILE_PATH}' might not exist in the branch '${GITHUB_BRANCH}' of repository '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}', or the repository itself is not accessible with the provided token. Raw error: ${errorBodyText}`;
+         detailedMessage = `GitHub API Error (404 Not Found). The file '${GITHUB_FILE_PATH}' might not exist in the branch '${GITHUB_BRANCH}' of repository '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}', or the repository itself is not accessible with the provided token. Ensure products.json exists and is initialized (e.g., with []). Raw error: ${errorBodyText}`;
       } else if (response.status === 403) {
         detailedMessage = `GitHub API Error (403 Forbidden). The GITHUB_TOKEN might not have sufficient permissions for the operation, or an abuse detection mechanism might have been triggered. Raw error: ${errorBodyText}`;
       }
@@ -95,20 +96,21 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
     }
 
     const data: GitHubFileResponse = await response.json();
-    if (data.message && response.status !== 200) {
-        console.error('GitHub API returned an error message while fetching file:', data.message);
+    if (data.message && response.status !== 200) { // Should be caught by !response.ok, but as a safeguard
+        console.error('GitHub API returned an error message while fetching file (status was 200 but message present):', data.message);
         throw new Error(`GitHub API error: ${data.message}`);
     }
-    if (!data.content) {
-      // If the file exists but is empty (e.g., newly created)
-      if (response.status === 200 && data.sha) {
-        console.warn(`File at ${API_BASE_URL}?ref=${GITHUB_BRANCH} exists but is empty. Initializing as an empty array.`);
-        return { products: [], sha: data.sha };
-      }
-      // If the file truly doesn't exist (should have been caught by 404 earlier, but as a safeguard)
-      console.error(`File content is missing from GitHub response for ${GITHUB_FILE_PATH}, and response was not a 404. This is unexpected.`);
-      throw new Error(`File content missing from GitHub response for ${GITHUB_FILE_PATH}.`);
+    if (!data.content && response.status === 200 && data.sha) {
+      // File exists but is empty or somehow content is missing but SHA is present
+      console.warn(`File at ${API_BASE_URL}?ref=${GITHUB_BRANCH} exists (SHA: ${data.sha}) but content is empty or missing. Initializing as an empty array. Ensure the file contains valid JSON (e.g., [] if empty).`);
+      return { products: [], sha: data.sha };
     }
+    if (!data.content) {
+      // This case should ideally be covered by the 404 handling, but as a fallback.
+      console.error(`File content is missing from GitHub response for ${GITHUB_FILE_PATH}, and response was not a 404. This is unexpected. Ensure products.json exists and is initialized.`);
+      throw new Error(`File content missing from GitHub response for ${GITHUB_FILE_PATH}. Ensure products.json exists and is initialized (e.g. with []).`);
+    }
+
 
     const decodedContent = Buffer.from(data.content, 'base64').toString('utf-8');
     let products;
@@ -116,12 +118,12 @@ async function fetchProductsFromGitHub(): Promise<{ products: Product[]; sha: st
       products = JSON.parse(decodedContent) as Product[];
     } catch (parseError) {
       console.error('Failed to parse products.json content from GitHub. Ensure it contains a valid JSON array (e.g., [] if empty). Content was:', decodedContent, 'Error:', parseError);
-      throw new Error('Invalid JSON format in products.json from GitHub.');
+      throw new Error('Invalid JSON format in products.json from GitHub. Please ensure it is a valid JSON array (e.g. [] if empty).');
     }
     
     if (!Array.isArray(products)) {
       console.error('Content of products.json from GitHub is not an array. Please ensure it is a valid JSON array (e.g., [] if empty). Current content:', products);
-      throw new Error('Content of products.json from GitHub is not an array.');
+      throw new Error('Content of products.json from GitHub is not an array. Please ensure it is a valid JSON array (e.g. [] if empty).');
     }
     return { products, sha: data.sha || null };
 
@@ -151,9 +153,20 @@ async function writeProductsToGitHub(products: Product[], sha: string | null, co
       branch: GITHUB_BRANCH,
     };
 
+    // SHA is required for updating an existing file. 
+    // If SHA is null, it implies we are trying to create a new file or the fetch failed to get SHA.
+    // GitHub API for creating a file is the same PUT, but without SHA IF the file does not exist.
+    // If the file exists and SHA is not provided, it will fail.
+    // Our logic assumes fetchProductsFromGitHub provides SHA if the file exists.
     if (sha) { 
       body.sha = sha;
+    } else {
+      // This case should be rare if fetchProductsFromGitHub worked and the file exists.
+      // If the file truly doesn't exist, and we're trying to create it,
+      // omitting SHA is correct. But if it exists and sha is null, it's an issue.
+      console.warn('SHA is null in writeProductsToGitHub. This might lead to an error if the file already exists on GitHub.');
     }
+
 
     const response = await fetch(API_BASE_URL, {
       method: 'PUT',
@@ -280,12 +293,12 @@ export const productsForStaticGeneration: Product[] = [
     price: 120.00,
     originalPrice: 150.00,
     description: 'Elegant silver necklace with a delicate pendant. Perfect for everyday wear or special occasions.',
-    imageUrl: 'https://picsum.photos/seed/jwl1-main/600/600',
+    imageUrl: 'https://placehold.co/600x600.png?text=Silver+Necklace',
     additionalImageUrls: [
-      'https://picsum.photos/seed/jwl1-alt1/600/600',
-      'https://picsum.photos/seed/jwl1-alt2/600/600',
+      'https://placehold.co/600x600.png?text=Necklace+Alt+1',
+      'https://placehold.co/600x600.png?text=Necklace+Alt+2',
     ],
-    videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', 
+    // videoUrl: 'https://www.youtube.com/embed/placeholder_video_id_jewelry1', 
     aiHint: 'silver necklace elegant pendant',
     buyUrl: '#',
   },
