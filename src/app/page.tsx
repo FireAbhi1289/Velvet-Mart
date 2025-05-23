@@ -54,9 +54,8 @@ export default function Home() {
                   className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300 cursor-pointer"
                   onClick={() => updateWishieCategoryContext(category.name)}
                 >
-                  <Link href={category.href} legacyBehavior passHref>
-                    <a className="flex flex-col h-full"> {/* Anchor tag wraps content for Link */}
-                      <CardHeader className="relative p-0 aspect-square"> {/* Keep aspect-square for container */}
+                  <Link href={category.href} className="flex flex-col h-full"> {/* Removed legacyBehavior, passHref, and <a> tag. Applied styles directly */}
+                      <CardHeader className="relative p-0 aspect-square">
                         <Image
                             src={category.image}
                             alt={category.name}
@@ -70,7 +69,6 @@ export default function Home() {
                         <category.icon className="w-10 h-10 mb-3 text-primary" />
                         <CardTitle className="text-xl font-medium">{category.name}</CardTitle>
                       </CardContent>
-                    </a>
                   </Link>
                 </Card>
             </div>
