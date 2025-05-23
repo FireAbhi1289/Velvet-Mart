@@ -1,5 +1,8 @@
 
-import { getProductsByCategory, type Product } from '@/lib/data'; // Updated import
+export const dynamic = 'force-static';
+export const revalidate = 60; // Revalidate at most once every 60 seconds
+
+import { getProductsByCategory, type Product } from '@/lib/data';
 import ProductCard from '@/components/product-card';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -15,7 +18,6 @@ type CategoryPageProps = {
 };
 
 // Function to generate static paths for categories
-// This might need adjustment if categories become fully dynamic from products.json
 export async function generateStaticParams() {
   // For now, keep predefined categories for static generation.
   // If you want this to be dynamic based on products.json,
@@ -53,7 +55,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const products = await getProductsByCategory(category); // Now async
+  const products = await getProductsByCategory(category);
   const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
 
   return (
