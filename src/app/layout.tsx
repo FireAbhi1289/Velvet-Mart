@@ -4,12 +4,10 @@ import {Inter as FontSans, Merriweather} from 'next/font/google'; // Using Inter
 import './globals.css';
 import {cn} from '@/lib/utils';
 import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer'; // Import the new Footer component
 import {Toaster} from '@/components/ui/toaster';
-import { WishieProvider } from '@/context/wishie-context'; // Import WishieProvider
-import WishieWidget from '@/components/wishie/wishie-widget'; // Import WishieWidget
-import { Button } from '@/components/ui/button'; // For WishieTrigger
-import { Sparkles } from 'lucide-react'; // For WishieTrigger icon
-import { useWishie } from '@/context/wishie-context'; // To use in WishieTriggerClient
+import { WishieProvider } from '@/context/wishie-context'; 
+import WishieWidget from '@/components/wishie/wishie-widget'; 
 import WishieTriggerClient from '@/components/wishie/wishie-trigger-client';
 
 
@@ -50,7 +48,7 @@ export default function RootLayout({
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
-            {/* Optional Footer can be added here */}
+            <Footer /> {/* Add Footer here */}
           </div>
           <Toaster />
           <WishieWidget /> {/* Render WishieWidget */}
