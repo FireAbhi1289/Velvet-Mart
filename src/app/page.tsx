@@ -48,13 +48,13 @@ export default function Home() {
       <section>
         <h2 className="text-3xl font-semibold mb-6 text-center">Shop by Category</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
              <div key={category.name} className="block group transform transition-transform duration-300 hover:scale-105">
                 <Card
                   className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300 cursor-pointer"
                   onClick={() => updateWishieCategoryContext(category.name)}
                 >
-                  <Link href={category.href} className="flex flex-col h-full"> {/* Removed legacyBehavior, passHref, and <a> tag. Applied styles directly */}
+                  <Link href={category.href} className="flex flex-col h-full">
                       <CardHeader className="relative p-0 aspect-square">
                         <Image
                             src={category.image}
@@ -63,9 +63,10 @@ export default function Home() {
                             objectFit="contain" 
                             className="transition-opacity duration-300 group-hover:opacity-90"
                             data-ai-hint={category.aiHint}
+                            priority={index < 3} // Add priority prop, true for the first few images typically above the fold
                           />
                       </CardHeader>
-                      <CardContent className="p-6 flex-grow flex flex-col justify-center items-center">
+                      <CardContent className="p-4 flex-grow flex flex-col justify-center items-center"> {/* Reduced padding */}
                         <category.icon className="w-10 h-10 mb-3 text-primary" />
                         <CardTitle className="text-xl font-medium">{category.name}</CardTitle>
                       </CardContent>
