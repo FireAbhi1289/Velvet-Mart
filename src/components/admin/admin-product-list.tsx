@@ -123,7 +123,7 @@ export default function AdminProductListClient({ initialProducts }: AdminProduct
                       src={imageUrlToDisplay}
                       alt={product.name}
                       layout="fill"
-                      objectFit="cover"
+                      objectFit="contain"
                       className="rounded-md"
                       data-ai-hint={imageUrlToDisplay.includes('placehold.co') ? "placeholder image" : (product.aiHint || "product image")}
                       onError={() => handleImageError(product.id)}

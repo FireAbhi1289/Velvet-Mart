@@ -34,7 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
             src={currentImageUrl}
             alt={product.name}
             layout="fill"
-            objectFit="cover"
+            objectFit="contain"
             className="transition-opacity duration-300 group-hover:opacity-90"
             data-ai-hint={currentImageUrl === fallbackImageUrl ? "placeholder image" : (product.aiHint || "product image")}
             onError={handleError}

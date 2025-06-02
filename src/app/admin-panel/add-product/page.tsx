@@ -411,7 +411,7 @@ export default function AddProductPage() {
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {additionalImagePreviews.map((previewUrl, index) => (
                       <div key={index} className="relative aspect-square">
-                        <Image src={previewUrl} alt={`Additional preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" />
+                        <Image src={previewUrl} alt={`Additional preview ${index + 1}`} layout="fill" objectFit="contain" className="rounded-md" />
                       </div>
                     ))}
                   </div>

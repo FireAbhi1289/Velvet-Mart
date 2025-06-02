@@ -60,7 +60,7 @@ export default function Home() {
                             src={category.image}
                             alt={category.name}
                             layout="fill"
-                            objectFit="cover" 
+                            objectFit="contain" 
                             className="transition-opacity duration-300 group-hover:opacity-90"
                             data-ai-hint={category.aiHint}
                           />

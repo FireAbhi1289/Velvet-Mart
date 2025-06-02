@@ -38,42 +38,31 @@ export default function RefundPolicyPage() {
           <CardTitle className="text-3xl font-bold tracking-tight">Refund & Cancellation Policy</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-muted-foreground">
+          <p>At Velvet Mart, we take pride in delivering quality products at unbeatable prices. Please read the following policy carefully before placing an order:</p>
+
           <p>Last updated: {new Date().toLocaleDateString()}</p>
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">1. Order Cancellation</h2>
+          <h2 className="text-xl font-semibold text-foreground pt-4">No Refunds</h2>
+          <p>All sales are final. We do not offer refunds for any reason, including:</p>
+          <ul className="list-disc list-inside space-y-2">
+            <li>Change of mind</li>
+            <li>Incorrect purchase</li>
+            <li>Unexpected delay in shipping</li>
+            <li>Product variations (color, packaging, etc.)</li>
+          </ul>
+
+          <h2 className="text-xl font-semibold text-foreground pt-4">No Replacements</h2>
           <p>
-            Placeholder: You may cancel your order within [Number] hours of placing it, provided it has not yet been processed or shipped. To cancel an order, please contact us immediately at [Your Contact Email/Phone] with your order details.
-          </p>
-          <p>
-            Placeholder: If the order has already been shipped, it cannot be canceled. In such cases, you may refer to our return policy.
+ We do not provide product replacements or exchanges. Customers are advised to carefully review product descriptions, specifications, and images before completing their order.
           </p>
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">2. Returns</h2>
-          <p>
-            Placeholder: We accept returns for eligible items within [Number] days of delivery. To be eligible for a return, your item must be unused, in the same condition that you received it, and in its original packaging.
-          </p>
-          <p>
-            Placeholder: Certain types of items are exempt from being returned, such as perishable goods, custom products, or personal care items. Please check the product description for specific return eligibility.
-          </p>
-          
-          <h2 className="text-xl font-semibold text-foreground pt-4">3. Refunds</h2>
-          <p>
-            Placeholder: Once your return is received and inspected, we will send you an email to notify you that we have received your returned item. We will also notify you of the approval or rejection of your refund.
-          </p>
-          <p>
-            Placeholder: If approved, your refund will be processed, and a credit will automatically be applied to your original method of payment within [Number] business days.
-          </p>
-          <p>
-            Placeholder: Shipping costs are non-refundable. If you receive a refund, the cost of return shipping may be deducted from your refund unless the return is due to our error.
-          </p>
+          <h2 className="text-xl font-semibold text-foreground pt-4">No Order Cancellations</h2>
+          <p>All sales are final. We do not offer refunds for any reason, including:</p>
+            Once an order is placed and payment is confirmed, it cannot be canceled or altered. Please ensure all your order details are accurate before confirming.
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">4. Exchanges</h2>
+          <h2 className="text-xl font-semibold text-foreground pt-4">Damaged or Defective Items</h2>
           <p>
-            Placeholder: We only replace items if they are defective or damaged. If you need to exchange it for the same item, send us an email at [Your Contact Email] and send your item to: [Your Return Address].
-          </p>
-          
-          <p className="pt-6 font-semibold text-foreground">
-            Please replace this placeholder text with your actual Refund & Cancellation Policy.
+            In rare cases of visibly damaged items on delivery, please contact us within 24 hours of receiving the package with unboxing proof (video mandatory). Resolution will be at our sole discretion and may include assistance through the courier or logistics partner.
           </p>
         </CardContent>
       </Card>

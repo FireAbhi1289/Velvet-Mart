@@ -37,36 +37,41 @@ export default function ShippingPolicyPage() {
         <CardHeader>
           <CardTitle className="text-3xl font-bold tracking-tight">Shipping Policy</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-muted-foreground">
+        <CardContent className="space-y-6 text-muted-foreground">
           <p>Last updated: {new Date().toLocaleDateString()}</p>
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">1. Order Processing Time</h2>
-          <p>
-            Placeholder: All orders are processed within [Number] business days (excluding weekends and holidays) after receiving your order confirmation email. You will receive another notification when your order has shipped.
-          </p>
+ <p>
+ At Velvet Mart, we aim to deliver your orders quickly and securely. Please review our shipping policy:
+ </p>
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">2. Shipping Rates and Delivery Estimates</h2>
+ <h2 className="text-xl font-semibold text-foreground">1. Order Processing</h2>
           <p>
-            Placeholder: Shipping charges for your order will be calculated and displayed at checkout.
+ Orders are usually processed within 1–2 business days after payment confirmation.
           </p>
+ <ul className="list-disc pl-6 space-y-1">
+ <li>Processing times may vary during high-volume periods or holidays.</li>
+ </ul>
+
+ <h2 className="text-xl font-semibold text-foreground pt-4">2. Shipping Time</h2>
           <p>
-            Placeholder: We offer various shipping options. Estimated delivery times are as follows:
+ Delivery times depend on your location and logistics partner.
           </p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Standard Shipping: [Number] - [Number] business days</li>
-            <li>Expedited Shipping: [Number] - [Number] business days</li>
+ <li>Estimated delivery is 4–7 business days for most regions.</li>
+ <li>We are not responsible for delays caused by third-party logistics, weather, or unforeseen events.</li>
           </ul>
+
+ <h2 className="text-xl font-semibold text-foreground pt-4">3. Shipping Charges</h2>
           <p>
-            Placeholder: Please note that delivery delays can occasionally occur due to unforeseen circumstances (e.g., weather, carrier delays).
+ Shipping fees, if applicable, will be displayed at checkout before confirming the order. In case of promotional free shipping, conditions may apply.
           </p>
 
-          <h2 className="text-xl font-semibold text-foreground pt-4">3. Shipment to P.O. Boxes</h2>
+ <h2 className="text-xl font-semibold text-foreground pt-4">4. Tracking</h2>
           <p>
-            Placeholder: [Specify if you ship to P.O. boxes or not].
+ Tracking details (if applicable) will be shared via the communication channel used for your order.
           </p>
-
-          <h2 className="text-xl font-semibold text-foreground pt-4">4. Shipment Confirmation and Order Tracking</h2>
-          <p>
+ {/* Keep the following placeholder content for now as it might contain other relevant sections you want to keep or adapt later */}
+          {/* <h2 className="text-xl font-semibold text-foreground pt-4">4. Shipment Confirmation and Order Tracking</h2>
             Placeholder: You will receive a shipment confirmation email once your order has shipped, containing your tracking number(s). The tracking number will be active within [Number] hours.
           </p>
 
@@ -80,9 +85,7 @@ export default function ShippingPolicyPage() {
             Placeholder: Velvet Mart is not liable for any products damaged or lost during shipping. If you received your order damaged, please contact the shipment carrier or our support team directly to file a claim. Please save all packaging material and damaged goods before filing a claim.
           </p>
 
-          <p className="pt-6 font-semibold text-foreground">
-            Please replace this placeholder text with your actual Shipping Policy.
-          </p>
+          <p className="pt-6 font-semibold text-foreground"></p> */}
         </CardContent>
       </Card>
     </div>

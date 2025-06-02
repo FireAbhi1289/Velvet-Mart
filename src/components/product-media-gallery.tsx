@@ -95,7 +95,7 @@ export default function ProductMediaGallery({ product }: ProductMediaGalleryProp
             src={getFallbackImageUrl(product.name, "gallery")}
             alt={product.name}
             layout="fill"
-            objectFit="cover"
+            objectFit="contain"
             priority 
             className="rounded-t-lg"
             data-ai-hint="placeholder image"
@@ -114,7 +114,7 @@ export default function ProductMediaGallery({ product }: ProductMediaGalleryProp
               src={currentMainImageUrl}
               alt={product.name}
               layout="fill"
-              objectFit="cover"
+              objectFit="contain"
               priority 
               className="rounded-t-lg"
               data-ai-hint={currentMainImageUrl.includes('placehold.co') ? "placeholder image" : (product.aiHint || "product image")}
@@ -149,7 +149,7 @@ export default function ProductMediaGallery({ product }: ProductMediaGalleryProp
                     src={getFallbackImageUrl(product.name, "no selection")}
                     alt="No media selected"
                     layout="fill"
-                    objectFit="cover"
+                    objectFit="contain"
                     className="rounded-t-lg"
                  />
             </div>
@@ -177,7 +177,7 @@ export default function ProductMediaGallery({ product }: ProductMediaGalleryProp
                   src={itemDisplayUrl}
                   alt={`${product.name} ${item.type} ${index + 1}`}
                   layout="fill"
-                  objectFit="cover"
+                  objectFit="contain"
                   className="transition-opacity hover:opacity-80"
                   onError={() => handleThumbnailError(index)}
                 />
